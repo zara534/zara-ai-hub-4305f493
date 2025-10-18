@@ -90,8 +90,11 @@ export function TextGeneration() {
 
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
-      const usernamePrefix = username ? `The user's name is ${username}. ` : "";
-      const enhancedPrompt = `${systemPrompt}. ${usernamePrefix}${prompt}`;
+      const usernameContext = username ? `Remember: The user's name is ${username}. Address them by name when appropriate. ` : "";
+      const conversationHistory = messages.length > 0 
+        ? messages.slice(-4).map(m => `${m.role}: ${m.content}`).join("\n") + "\n" 
+        : "";
+      const enhancedPrompt = `${systemPrompt}. ${usernameContext}\n\nConversation:\n${conversationHistory}user: ${prompt}`;
       const response = await fetch(
         `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`
       );

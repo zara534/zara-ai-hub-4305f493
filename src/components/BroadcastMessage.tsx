@@ -33,16 +33,22 @@ export function BroadcastMessage() {
           title: title.trim(),
           content: content.trim(),
           created_by: user.id,
+          ai_model_name: "Admin",
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Broadcast error details:", error);
+        toast.error(`Failed to send: ${error.message}`);
+        setLoading(false);
+        return;
+      }
 
       toast.success("Broadcast message sent to all users!");
       setTitle("");
       setContent("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending broadcast:", error);
-      toast.error("Failed to send broadcast");
+      toast.error(`Failed to send broadcast: ${error?.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

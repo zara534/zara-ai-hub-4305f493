@@ -24,7 +24,7 @@ export function UsageLimitsManager() {
       const { data, error } = await supabase
         .from("global_limits")
         .select("*")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -36,27 +36,48 @@ export function UsageLimitsManager() {
       }
     } catch (error) {
       console.error("Error loading limits:", error);
+      toast.error("Failed to load limits");
     }
   };
 
   const handleSaveLimits = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Check if a record exists
+      const { data: existingData } = await supabase
         .from("global_limits")
-        .update({
-          text_generation_limit: textLimitEnabled ? textLimit : null,
-          image_generation_limit: imageLimitEnabled ? imageLimit : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", (await supabase.from("global_limits").select("id").single()).data?.id);
+        .select("id")
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingData) {
+        // Update existing record
+        const { error } = await supabase
+          .from("global_limits")
+          .update({
+            text_generation_limit: textLimitEnabled ? textLimit : null,
+            image_generation_limit: imageLimitEnabled ? imageLimit : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingData.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from("global_limits")
+          .insert({
+            text_generation_limit: textLimitEnabled ? textLimit : null,
+            image_generation_limit: imageLimitEnabled ? imageLimit : null,
+          });
+
+        if (error) throw error;
+      }
 
       toast.success("Usage limits updated successfully!");
-    } catch (error) {
+      await loadLimits(); // Reload to get the latest data
+    } catch (error: any) {
       console.error("Error saving limits:", error);
-      toast.error("Failed to save limits");
+      toast.error(`Failed to save limits: ${error?.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }
