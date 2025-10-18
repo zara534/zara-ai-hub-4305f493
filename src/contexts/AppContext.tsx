@@ -14,7 +14,6 @@ export interface ImageModel {
   name: string;
   apiEndpoint: string;
   description?: string;
-  modelType?: string;
 }
 
 export interface Announcement {
