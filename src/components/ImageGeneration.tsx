@@ -58,7 +58,6 @@ export function ImageGeneration() {
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const { imageModels = DEFAULT_IMAGE_MODELS } = useApp();
 
@@ -69,34 +68,19 @@ export function ImageGeneration() {
     }
 
     setIsLoading(true);
-    setError(null);
     try {
       const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
-      const fullPrompt = model.systemPrompt 
-        ? `${model.systemPrompt} ${prompt}` 
-        : prompt;
-      const encodedPrompt = encodeURIComponent(fullPrompt);
+      const encodedPrompt = encodeURIComponent(prompt);
       const modelType = model.modelType || selectedModel;
-      const seed = Date.now();
+      const seed = Date.now(); // Unique seed for each generation
       const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=1024&height=1024&seed=${seed}`;
       
-      // Test if image loads successfully
-      const img = new Image();
-      img.onload = () => {
-        setGeneratedImage(imageUrl);
-        toast.success("Image generated successfully!");
-        setIsLoading(false);
-      };
-      img.onerror = () => {
-        setError("Failed to load image. Please try again.");
-        toast.error("Failed to generate image");
-        setIsLoading(false);
-      };
-      img.src = imageUrl;
+      setGeneratedImage(imageUrl);
+      toast.success("Image generated successfully!");
     } catch (error) {
       console.error("Image generation error:", error);
-      setError("Failed to generate image. Please try again.");
       toast.error("Failed to generate image");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -150,7 +134,6 @@ export function ImageGeneration() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
-              className="flex-1"
             />
             <Button onClick={handleGenerate} disabled={isLoading} size="lg">
               {isLoading ? (
@@ -162,58 +145,26 @@ export function ImageGeneration() {
           </div>
 
           {isLoading && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="relative">
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ImageIcon className="w-6 h-6 text-primary/50" />
-                </div>
-              </div>
-              <div className="text-center">
-                <p className="font-medium">Generating your image...</p>
-                <p className="text-sm text-muted-foreground">This may take a few moments</p>
-              </div>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="ml-2">Generating image...</span>
             </div>
           )}
 
-          {error && !isLoading && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <span className="text-2xl">❌</span>
-              </div>
-              <div className="text-center">
-                <p className="font-medium text-destructive">Generation Failed</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
-              </div>
-              <Button onClick={handleGenerate} variant="outline">
-                Try Again
-              </Button>
-            </div>
-          )}
-
-          {generatedImage && !isLoading && !error && (
+          {generatedImage && !isLoading && (
             <div className="space-y-4">
               <div className="relative rounded-lg overflow-hidden border-2">
                 <img 
                   src={generatedImage} 
                   alt="Generated" 
                   className="w-full h-auto"
+                  onLoad={() => toast.success("Image loaded!")}
                 />
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleDownload} className="flex-1" variant="outline">
-                  <Download className="w-5 h-5 mr-2" />
-                  Download
-                </Button>
-                <Button 
-                  onClick={handleGenerate} 
-                  className="flex-1"
-                  variant="secondary"
-                >
-                  <ImageIcon className="w-5 h-5 mr-2" />
-                  Regenerate
-                </Button>
-              </div>
+              <Button onClick={handleDownload} className="w-full" variant="outline">
+                <Download className="w-5 h-5 mr-2" />
+                Download Image
+              </Button>
             </div>
           )}
         </CardContent>

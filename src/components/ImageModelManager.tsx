@@ -20,12 +20,10 @@ const POLLINATIONS_MODELS = [
 export function ImageModelManager() {
   const { imageModels, addImageModel, removeImageModel } = useApp();
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🎨");
   const [apiEndpoint, setApiEndpoint] = useState("https://image.pollinations.ai/prompt");
   const [description, setDescription] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAddModel = () => {
     if (!name.trim()) {
@@ -33,58 +31,17 @@ export function ImageModelManager() {
       return;
     }
     
-    if (editingId) {
-      // Update existing model
-      const updatedModels = imageModels.map(m => 
-        m.id === editingId 
-          ? { 
-              ...m,
-              name: name.trim(), 
-              emoji: emoji.trim(),
-              description: description.trim(),
-              modelType: selectedModel,
-              systemPrompt: systemPrompt.trim()
-            }
-          : m
-      );
-      localStorage.setItem("custom-image-models", JSON.stringify(updatedModels.filter(m => !m.id.startsWith('default'))));
-      toast.success("Image model updated!");
-      setEditingId(null);
-    } else {
-      // Add new model
-      addImageModel({ 
-        name: name.trim(),
-        emoji: emoji.trim(),
-        apiEndpoint: apiEndpoint.trim(),
-        description: description.trim(),
-        modelType: selectedModel,
-        systemPrompt: systemPrompt.trim()
-      });
-      toast.success("Image model added successfully!");
-    }
+    addImageModel({ 
+      name: name.trim(), 
+      apiEndpoint: apiEndpoint.trim(),
+      description: description.trim(),
+      modelType: selectedModel,
+      systemPrompt: systemPrompt.trim()
+    });
     
+    toast.success("Image model added successfully!");
     setName("");
-    setEmoji("🎨");
     setApiEndpoint("https://image.pollinations.ai/prompt");
-    setDescription("");
-    setSelectedModel("flux");
-    setSystemPrompt("");
-  };
-
-  const handleEdit = (model: any) => {
-    setEditingId(model.id);
-    setName(model.name);
-    setEmoji(model.emoji || "🎨");
-    setDescription(model.description || "");
-    setSelectedModel(model.modelType || "flux");
-    setSystemPrompt(model.systemPrompt || "");
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setName("");
-    setEmoji("🎨");
     setDescription("");
     setSelectedModel("flux");
     setSystemPrompt("");
@@ -96,32 +53,19 @@ export function ImageModelManager() {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
             <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-            {editingId ? "Edit Image Generator" : "Add Custom Image Generator"}
+            Add Custom Image Generator
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="model-name" className="text-sm font-medium">Model Name *</Label>
-              <Input
-                id="model-name"
-                placeholder="e.g., My Custom Generator"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border-2"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="model-emoji" className="text-sm font-medium">Icon/Emoji</Label>
-              <Input
-                id="model-emoji"
-                placeholder="🎨"
-                value={emoji}
-                onChange={(e) => setEmoji(e.target.value)}
-                className="border-2"
-                maxLength={2}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="model-name" className="text-sm font-medium">Model Name *</Label>
+            <Input
+              id="model-name"
+              placeholder="e.g., My Custom Generator"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border-2"
+            />
           </div>
 
           <div className="space-y-2">
@@ -176,17 +120,10 @@ export function ImageModelManager() {
             />
           </div>
 
-          <div className="flex gap-2">
-            {editingId && (
-              <Button onClick={handleCancelEdit} variant="outline" className="flex-1" size="lg">
-                Cancel
-              </Button>
-            )}
-            <Button onClick={handleAddModel} className="flex-1" size="lg">
-              <Plus className="w-5 h-5 mr-2" />
-              {editingId ? "Update Generator" : "Add Generator"}
-            </Button>
-          </div>
+          <Button onClick={handleAddModel} className="w-full" size="lg">
+            <Plus className="w-5 h-5 mr-2" />
+            Add Image Generator
+          </Button>
         </CardContent>
       </Card>
 
@@ -215,8 +152,8 @@ export function ImageModelManager() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">
-                          {model.emoji || <ImageIcon className="w-5 h-5 text-primary" />}
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-primary" />
                         </div>
                         <div>
                           <h3 className="font-bold text-base">{model.name}</h3>
@@ -227,31 +164,17 @@ export function ImageModelManager() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        {!model.id.startsWith('default') && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleEdit(model)}
-                          >
-                            <Sparkles className="w-4 h-4 text-primary" />
-                          </Button>
-                        )}
-                        {!model.id.startsWith('default') && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => {
-                              removeImageModel(model.id);
-                              toast.success("Image generator removed");
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          removeImageModel(model.id);
+                          toast.success("Image generator removed");
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
                     </div>
                     
                     {model.description && (

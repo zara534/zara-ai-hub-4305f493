@@ -1,45 +1,50 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock } from "lucide-react";
+import { toast } from "sonner";
+import { useApp } from "@/contexts/AppContext";
 
 export function AdminLogin() {
-  const { isAdmin } = useAuth();
+  const [password, setPassword] = useState("");
+  const { login } = useApp();
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center p-4 md:p-6">
-        <Card className="w-full max-w-md border-2 shadow-lg bg-destructive/10">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl md:text-2xl text-destructive">
-              <Lock className="w-5 h-5 md:w-6 md:h-6" />
-              Access Denied
-            </CardTitle>
-            <CardDescription className="text-sm">
-              You must be logged in as an admin to access this page.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Please contact the system administrator if you believe you should have access.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const handleLogin = () => {
+    if (login(password)) {
+      toast.success("Welcome, Admin!");
+    } else {
+      toast.error("Invalid password");
+    }
+    setPassword("");
+  };
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-4 md:p-6">
-      <Card className="w-full max-w-md border-2 shadow-lg bg-primary/5">
+      <Card className="w-full max-w-md border-2 shadow-lg">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-            <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-            Admin Authenticated
+            <Lock className="w-5 h-5 md:w-6 md:h-6" />
+            Admin Access
           </CardTitle>
           <CardDescription className="text-sm">
-            You have admin access. You can now manage the system.
+            Enter password to manage AI agents
           </CardDescription>
         </CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            type="password"
+            placeholder="Enter admin password (zarahacks)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+            className="h-12 text-base"
+          />
+          <Button onClick={handleLogin} className="w-full h-12 text-base">
+            <Lock className="w-4 h-4 mr-2" />
+            Login
+          </Button>
+        </CardContent>
       </Card>
     </div>
   );

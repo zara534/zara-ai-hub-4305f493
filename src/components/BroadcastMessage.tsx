@@ -3,49 +3,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+
+interface Message {
+  id: string;
+  title: string;
+  content: string;
+  timestamp: string;
+}
 
 export function BroadcastMessage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
 
-  const handleSendBroadcast = async () => {
+  const handleSendBroadcast = () => {
     if (!title.trim() || !content.trim()) {
       toast.error("Please fill in both title and message");
       return;
     }
 
-    if (!user) {
-      toast.error("You must be logged in");
-      return;
-    }
+    const message: Message = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      content: content.trim(),
+      timestamp: new Date().toISOString(),
+    };
 
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from("announcements")
-        .insert({
-          title: title.trim(),
-          content: content.trim(),
-          created_by: user.id,
-        });
+    const existingMessages = JSON.parse(localStorage.getItem("broadcast-messages") || "[]");
+    localStorage.setItem("broadcast-messages", JSON.stringify([message, ...existingMessages]));
 
-      if (error) throw error;
-
-      toast.success("Broadcast message sent to all users!");
-      setTitle("");
-      setContent("");
-    } catch (error) {
-      console.error("Error sending broadcast:", error);
-      toast.error("Failed to send broadcast");
-    } finally {
-      setLoading(false);
-    }
+    toast.success("Broadcast message sent to all users!");
+    setTitle("");
+    setContent("");
+    
+    // Trigger a custom event so other components can react
+    window.dispatchEvent(new CustomEvent("new-broadcast"));
   };
 
   return (
@@ -68,9 +61,9 @@ export function BroadcastMessage() {
           onChange={(e) => setContent(e.target.value)}
           className="min-h-32"
         />
-        <Button onClick={handleSendBroadcast} className="w-full" size="lg" disabled={loading}>
+        <Button onClick={handleSendBroadcast} className="w-full" size="lg">
           <Send className="w-5 h-5 mr-2" />
-          {loading ? "Sending..." : "Send Broadcast"}
+          Send Broadcast
         </Button>
       </CardContent>
     </Card>
