@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { BroadcastMessage } from "./BroadcastMessage";
 import { ImageModelManager } from "./ImageModelManager";
+import { UsageLimitsManager } from "./UsageLimitsManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminPanel() {
@@ -102,12 +103,13 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
-      <Tabs defaultValue="text-models" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="text-models">Text AI Models</TabsTrigger>
-          <TabsTrigger value="image-models">Image Models</TabsTrigger>
-          <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="text-models" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="text-models">Text AI</TabsTrigger>
+            <TabsTrigger value="image-models">Image AI</TabsTrigger>
+            <TabsTrigger value="limits">Limits</TabsTrigger>
+            <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
       {/* Add AI Agent Card */}
@@ -270,6 +272,10 @@ export function AdminPanel() {
 
         <TabsContent value="image-models" className="space-y-6 mt-6">
           <ImageModelManager />
+        </TabsContent>
+
+        <TabsContent value="limits" className="space-y-6 mt-6">
+          <UsageLimitsManager />
         </TabsContent>
 
         <TabsContent value="broadcast" className="space-y-6 mt-6">

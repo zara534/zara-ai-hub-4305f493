@@ -12,6 +12,7 @@ export interface AIModel {
 export interface ImageModel {
   id: string;
   name: string;
+  emoji?: string;
   apiEndpoint: string;
   description?: string;
   modelType?: string;
