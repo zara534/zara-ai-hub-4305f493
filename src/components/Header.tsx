@@ -1,4 +1,4 @@
-import { Settings, Home, Lock, Menu, Megaphone, User, LogOut } from "lucide-react";
+import { Settings, Home, Lock, Menu, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
@@ -8,8 +8,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface HeaderProps {
-  currentView: "home" | "admin" | "settings" | "announcements";
-  onViewChange: (view: "home" | "admin" | "settings" | "announcements") => void;
+  currentView: "home" | "admin" | "settings";
+  onViewChange: (view: "home" | "admin" | "settings") => void;
 }
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
@@ -18,7 +18,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleNavigation = (view: "home" | "admin" | "settings" | "announcements") => {
+  const handleNavigation = (view: "home" | "admin" | "settings") => {
     onViewChange(view);
     setIsOpen(false);
   };
@@ -56,23 +56,13 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                   Home
                 </Button>
                 <Button
-                  variant={currentView === "announcements" ? "default" : "ghost"}
+                  variant={currentView === "admin" ? "default" : "ghost"}
                   className="w-full justify-start text-lg h-12"
-                  onClick={() => handleNavigation("announcements")}
+                  onClick={() => handleNavigation("admin")}
                 >
-                  <Megaphone className="w-5 h-5 mr-3" />
-                  Announcements
+                  <Lock className="w-5 h-5 mr-3" />
+                  Admin
                 </Button>
-                {isAdmin && (
-                  <Button
-                    variant={currentView === "admin" ? "default" : "ghost"}
-                    className="w-full justify-start text-lg h-12"
-                    onClick={() => handleNavigation("admin")}
-                  >
-                    <Lock className="w-5 h-5 mr-3" />
-                    Admin
-                  </Button>
-                )}
                 <Button
                   variant={currentView === "settings" ? "default" : "ghost"}
                   className="w-full justify-start text-lg h-12"
@@ -80,17 +70,6 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 >
                   <Settings className="w-5 h-5 mr-3" />
                   Settings
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-lg h-12"
-                  onClick={() => {
-                    navigate("/profile");
-                    setIsOpen(false);
-                  }}
-                >
-                  <User className="w-5 h-5 mr-3" />
-                  Profile
                 </Button>
                 <Button
                   variant="ghost"
@@ -127,23 +106,13 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               Home
             </Button>
             <Button
-              variant={currentView === "announcements" ? "default" : "ghost"}
+              variant={currentView === "admin" ? "default" : "ghost"}
               size="sm"
-              onClick={() => onViewChange("announcements")}
+              onClick={() => onViewChange("admin")}
             >
-              <Megaphone className="w-4 h-4 mr-2" />
-              Announcements
+              <Lock className="w-4 h-4 mr-2" />
+              Admin
             </Button>
-            {isAdmin && (
-              <Button
-                variant={currentView === "admin" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewChange("admin")}
-              >
-                <Lock className="w-4 h-4 mr-2" />
-                Admin
-              </Button>
-            )}
             <Button
               variant={currentView === "settings" ? "default" : "ghost"}
               size="sm"
@@ -151,14 +120,6 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
             >
               <Settings className="w-4 h-4 mr-2" />
               Settings
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/profile")}
-            >
-              <User className="w-4 h-4 mr-2" />
-              Profile
             </Button>
             <Button
               variant="ghost"

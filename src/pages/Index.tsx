@@ -5,7 +5,6 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { AdminLogin } from "@/components/AdminLogin";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { Header } from "@/components/Header";
-import { AnnouncementsView } from "@/components/AnnouncementsView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { Loader2 } from "lucide-react";
@@ -14,7 +13,7 @@ const Index = () => {
   const { user, session } = useAuth();
   const { isAdmin } = useApp();
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState<"home" | "admin" | "settings" | "announcements">("home");
+  const [currentView, setCurrentView] = useState<"home" | "admin" | "settings">("home");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +38,6 @@ const Index = () => {
       <main className="container mx-auto py-4 md:py-8 px-0 md:px-4">
         {currentView === "home" && <TextGeneration />}
         {currentView === "settings" && <SettingsPanel />}
-        {currentView === "announcements" && <AnnouncementsView />}
         {currentView === "admin" && (isAdmin ? <AdminPanel /> : <AdminLogin />)}
       </main>
     </div>

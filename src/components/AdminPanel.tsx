@@ -17,9 +17,6 @@ export function AdminPanel() {
   const [emoji, setEmoji] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [description, setDescription] = useState("");
-  const [announcementTitle, setAnnouncementTitle] = useState("");
-  const [announcementContent, setAnnouncementContent] = useState("");
-  const [aiModelForAnnouncement, setAiModelForAnnouncement] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -98,38 +95,6 @@ export function AdminPanel() {
     
     toast.success("AI Agent updated successfully!");
     handleCancelEdit();
-  };
-
-  const handleCreateAnnouncement = async () => {
-    if (!announcementTitle.trim() || !announcementContent.trim() || !aiModelForAnnouncement.trim()) {
-      toast.error("Please fill all announcement fields");
-      return;
-    }
-
-    if (!user) {
-      toast.error("You must be logged in");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("announcements")
-        .insert({
-          title: announcementTitle,
-          content: announcementContent,
-          ai_model_name: aiModelForAnnouncement,
-          author_id: user.id,
-        });
-
-      if (error) throw error;
-
-      toast.success("Announcement created successfully!");
-      setAnnouncementTitle("");
-      setAnnouncementContent("");
-      setAiModelForAnnouncement("");
-    } catch (error: any) {
-      toast.error("Failed to create announcement");
-    }
   };
 
   return (
@@ -288,37 +253,6 @@ export function AdminPanel() {
               </div>
             ))
           )}
-        </CardContent>
-      </Card>
-
-      {/* Create Announcement Card */}
-      <Card className="shadow-lg border-2">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-            📢 Create Announcement
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            placeholder="Announcement Title *"
-            value={announcementTitle}
-            onChange={(e) => setAnnouncementTitle(e.target.value)}
-          />
-          <Textarea
-            placeholder="Announcement Content *"
-            value={announcementContent}
-            onChange={(e) => setAnnouncementContent(e.target.value)}
-            className="min-h-32"
-          />
-          <Input
-            placeholder="AI Model Name (e.g., Creative Writer) *"
-            value={aiModelForAnnouncement}
-            onChange={(e) => setAiModelForAnnouncement(e.target.value)}
-          />
-          <Button onClick={handleCreateAnnouncement} className="w-full" size="lg">
-            <Plus className="w-5 h-5 mr-2" />
-            Create Announcement
-          </Button>
         </CardContent>
       </Card>
     </div>
