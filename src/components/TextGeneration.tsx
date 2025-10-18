@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Download, Copy, Check, RefreshCw } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,10 +26,8 @@ export function TextGeneration() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [clearOnSwitch, setClearOnSwitch] = useState(true);
   const [username, setUsername] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const previousModelRef = useRef<string>(selectedModel);
 
   useEffect(() => {
     loadUsername();
@@ -57,12 +55,6 @@ export function TextGeneration() {
     }
   }, [messages]);
 
-  useEffect(() => {
-    if (previousModelRef.current !== selectedModel && clearOnSwitch) {
-      setMessages([]);
-    }
-    previousModelRef.current = selectedModel;
-  }, [selectedModel, clearOnSwitch]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -192,41 +184,16 @@ export function TextGeneration() {
                 </p>
               )}
               <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5">
-                  <Switch
-                    id="clear-switch"
-                    checked={clearOnSwitch}
-                    onCheckedChange={setClearOnSwitch}
-                    className="scale-75"
-                  />
-                  <Label htmlFor="clear-switch" className="text-xs cursor-pointer">
-                    Clear on switch
-                  </Label>
-                </div>
                 {messages.length > 0 && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setMessages([]);
-                        toast.success("Chat cleared");
-                      }}
-                      className="flex-shrink-0"
-                    >
-                      <RefreshCw className="w-4 h-4 md:mr-2" />
-                      <span className="hidden md:inline">Clear</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownload}
-                      className="flex-shrink-0"
-                    >
-                      <Download className="w-4 h-4 md:mr-2" />
-                      <span className="hidden md:inline">Download</span>
-                    </Button>
-                  </>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownload}
+                    className="flex-shrink-0"
+                  >
+                    <Download className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">Download</span>
+                  </Button>
                 )}
               </div>
             </div>

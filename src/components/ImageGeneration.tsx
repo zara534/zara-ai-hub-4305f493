@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Image as ImageIcon } from "lucide-react";
+import { Loader2, Download, Image as ImageIcon, Copy, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 
@@ -14,6 +14,13 @@ interface ImageModel {
   description?: string;
   modelType?: string;
   systemPrompt?: string;
+}
+
+interface GeneratedImage {
+  id: string;
+  url: string;
+  prompt: string;
+  timestamp: number;
 }
 
 const DEFAULT_IMAGE_MODELS: ImageModel[] = [
@@ -56,13 +63,13 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
 
 export function ImageGeneration() {
   const [prompt, setPrompt] = useState("");
-  const [lastPrompt, setLastPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const { imageModels = DEFAULT_IMAGE_MODELS } = useApp();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const getImageDimensions = (ratio: string) => {
     const dimensions: Record<string, { width: number; height: number }> = {
@@ -83,7 +90,8 @@ export function ImageGeneration() {
 
     setIsLoading(true);
     setError(null);
-    setLastPrompt(prompt);
+    abortControllerRef.current = new AbortController();
+
     try {
       const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
       const fullPrompt = model.systemPrompt 
@@ -98,17 +106,27 @@ export function ImageGeneration() {
       // Test if image loads successfully
       const img = new Image();
       img.onload = () => {
-        setGeneratedImage(imageUrl);
+        if (abortControllerRef.current?.signal.aborted) return;
+        
+        const newImage: GeneratedImage = {
+          id: Date.now().toString(),
+          url: imageUrl,
+          prompt: prompt,
+          timestamp: Date.now()
+        };
+        setGeneratedImages(prev => [newImage, ...prev]);
         toast.success("Image generated successfully!");
         setIsLoading(false);
       };
       img.onerror = () => {
+        if (abortControllerRef.current?.signal.aborted) return;
         setError("Failed to load image. Please try again.");
         toast.error("Failed to generate image");
         setIsLoading(false);
       };
       img.src = imageUrl;
     } catch (error) {
+      if (abortControllerRef.current?.signal.aborted) return;
       console.error("Image generation error:", error);
       setError("Failed to generate image. Please try again.");
       toast.error("Failed to generate image");
@@ -116,21 +134,25 @@ export function ImageGeneration() {
     }
   };
 
-  const handleReuse = () => {
-    setPrompt(lastPrompt);
-    setError(null);
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    setIsLoading(false);
+    toast.info("Generation cancelled");
   };
 
-  const handleDownload = async () => {
-    if (!generatedImage) return;
-    
+  const handleCopyPrompt = (promptText: string) => {
+    navigator.clipboard.writeText(promptText);
+    toast.success("Prompt copied to clipboard!");
+  };
+
+  const handleDownload = async (imageUrl: string, promptText: string) => {
     try {
-      const response = await fetch(generatedImage);
+      const response = await fetch(imageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `generated-${Date.now()}.png`;
+      a.download = `${promptText.slice(0, 30)}-${Date.now()}.png`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -139,6 +161,11 @@ export function ImageGeneration() {
     } catch (error) {
       toast.error("Failed to download image");
     }
+  };
+
+  const handleDeleteImage = (id: string) => {
+    setGeneratedImages(prev => prev.filter(img => img.id !== id));
+    toast.success("Image removed");
   };
 
   return (
@@ -186,14 +213,17 @@ export function ImageGeneration() {
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
               className="flex-1"
+              disabled={isLoading}
             />
-            <Button onClick={handleGenerate} disabled={isLoading} size="lg">
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
+            {isLoading ? (
+              <Button onClick={handleCancel} size="lg" variant="destructive">
+                <X className="w-5 h-5" />
+              </Button>
+            ) : (
+              <Button onClick={handleGenerate} size="lg">
                 <ImageIcon className="w-5 h-5" />
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
 
           {isLoading && (
@@ -220,51 +250,66 @@ export function ImageGeneration() {
                 <p className="font-bold text-lg text-destructive">⚠️ Generation Failed</p>
                 <p className="text-sm text-muted-foreground mt-1">{error}</p>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={handleGenerate} variant="outline">
-                  🔄 Try Again
-                </Button>
-                {lastPrompt && (
-                  <Button onClick={handleReuse} variant="secondary">
-                    ♻️ Reuse Last Prompt
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {generatedImage && !isLoading && !error && (
-            <div className="space-y-4">
-              <div className="relative rounded-lg overflow-hidden border-2">
-                <img 
-                  src={generatedImage} 
-                  alt="Generated" 
-                  className="w-full h-auto"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleDownload} className="flex-1" variant="outline">
-                  <Download className="w-5 h-5 mr-2" />
-                  Download
-                </Button>
-                <Button 
-                  onClick={handleGenerate} 
-                  className="flex-1"
-                  variant="secondary"
-                >
-                  <ImageIcon className="w-5 h-5 mr-2" />
-                  Regenerate
-                </Button>
-                {lastPrompt && lastPrompt !== prompt && (
-                  <Button onClick={handleReuse} variant="outline">
-                    ♻️ Reuse Last
-                  </Button>
-                )}
-              </div>
+              <Button onClick={handleGenerate} variant="outline">
+                🔄 Try Again
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {generatedImages.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">Generated Images ({generatedImages.length})</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {generatedImages.map((image) => (
+              <Card key={image.id} className="overflow-hidden">
+                <div className="relative">
+                  <img 
+                    src={image.url} 
+                    alt={image.prompt} 
+                    className="w-full h-auto"
+                  />
+                  <Button
+                    onClick={() => handleDeleteImage(image.id)}
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <CardContent className="space-y-3 pt-4">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-medium mb-1">Prompt:</p>
+                    <p className="text-sm text-muted-foreground">{image.prompt}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => handleDownload(image.url, image.prompt)} 
+                      className="flex-1" 
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Button>
+                    <Button 
+                      onClick={() => handleCopyPrompt(image.prompt)} 
+                      className="flex-1"
+                      variant="secondary"
+                      size="sm"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Prompt
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
