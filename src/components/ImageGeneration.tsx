@@ -12,6 +12,8 @@ interface ImageModel {
   name: string;
   apiEndpoint: string;
   description?: string;
+  modelType?: string;
+  systemPrompt?: string;
 }
 
 const DEFAULT_IMAGE_MODELS: ImageModel[] = [
@@ -19,13 +21,36 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
     id: "flux",
     name: "Flux",
     apiEndpoint: "https://image.pollinations.ai/prompt",
-    description: "High quality image generation with Flux"
+    description: "High quality image generation (Default)",
+    modelType: "flux"
   },
   {
-    id: "turbo",
-    name: "Turbo",
+    id: "stable-diffusion-xl",
+    name: "Stable Diffusion XL",
     apiEndpoint: "https://image.pollinations.ai/prompt",
-    description: "Fast image generation"
+    description: "Stable Diffusion XL model",
+    modelType: "stable-diffusion-xl"
+  },
+  {
+    id: "dall-e-3",
+    name: "DALL-E 3",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "OpenAI's DALL-E 3",
+    modelType: "dall-e-3"
+  },
+  {
+    id: "playground-v2.5",
+    name: "Playground v2.5",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "Playground v2.5",
+    modelType: "playground-v2.5"
+  },
+  {
+    id: "dpo",
+    name: "DPO",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "DPO model",
+    modelType: "dpo"
   }
 ];
 
@@ -46,7 +71,9 @@ export function ImageGeneration() {
     try {
       const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
       const encodedPrompt = encodeURIComponent(prompt);
-      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${selectedModel}&nologo=true&width=1024&height=1024`;
+      const modelType = model.modelType || selectedModel;
+      const seed = Date.now(); // Unique seed for each generation
+      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=1024&height=1024&seed=${seed}`;
       
       setGeneratedImage(imageUrl);
       toast.success("Image generated successfully!");

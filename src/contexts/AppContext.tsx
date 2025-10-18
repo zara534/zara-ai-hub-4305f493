@@ -14,6 +14,8 @@ export interface ImageModel {
   name: string;
   apiEndpoint: string;
   description?: string;
+  modelType?: string;
+  systemPrompt?: string;
 }
 
 export interface Announcement {
@@ -73,13 +75,41 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
     id: "flux",
     name: "Flux",
     apiEndpoint: "https://image.pollinations.ai/prompt",
-    description: "High quality image generation"
+    description: "High quality image generation (Default)",
+    modelType: "flux",
+    systemPrompt: "Generate high-quality, detailed images"
   },
   {
-    id: "turbo",
-    name: "Turbo",
+    id: "stable-diffusion-xl",
+    name: "Stable Diffusion XL",
     apiEndpoint: "https://image.pollinations.ai/prompt",
-    description: "Fast image generation"
+    description: "Stable Diffusion XL model for creative images",
+    modelType: "stable-diffusion-xl",
+    systemPrompt: "Create artistic and creative images"
+  },
+  {
+    id: "dall-e-3",
+    name: "DALL-E 3",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "OpenAI's DALL-E 3 for photorealistic images",
+    modelType: "dall-e-3",
+    systemPrompt: "Generate photorealistic and detailed images"
+  },
+  {
+    id: "playground-v2.5",
+    name: "Playground v2.5",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "Playground v2.5 for diverse styles",
+    modelType: "playground-v2.5",
+    systemPrompt: "Create diverse artistic styles"
+  },
+  {
+    id: "dpo",
+    name: "DPO",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "DPO model for optimized generation",
+    modelType: "dpo",
+    systemPrompt: "Generate optimized images efficiently"
   }
 ];
 
