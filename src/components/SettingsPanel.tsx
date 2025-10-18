@@ -10,6 +10,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PasswordChanger } from "./PasswordChanger";
 
 export function SettingsPanel() {
   const { settings, updateSettings } = useApp();
@@ -203,6 +204,8 @@ export function SettingsPanel() {
           </div>
         </CardContent>
       </Card>
+
+      <PasswordChanger />
     </div>
   );
 }

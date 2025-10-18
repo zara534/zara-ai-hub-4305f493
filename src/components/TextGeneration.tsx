@@ -9,6 +9,8 @@ import { Loader2, Send, Download, Copy, Check, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -18,14 +20,36 @@ interface Message {
 
 export function TextGeneration() {
   const { aiModels } = useApp();
+  const { user } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [clearOnSwitch, setClearOnSwitch] = useState(true);
+  const [username, setUsername] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousModelRef = useRef<string>(selectedModel);
+
+  useEffect(() => {
+    loadUsername();
+  }, [user]);
+
+  const loadUsername = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+      if (data?.username) {
+        setUsername(data.username);
+      }
+    } catch (error) {
+      console.error("Error loading username:", error);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -67,9 +91,10 @@ export function TextGeneration() {
 
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
-      const enhancedPrompt = `${systemPrompt}. ${prompt}`;
+      const usernamePrefix = username ? `The user's name is ${username}. ` : "";
+      const enhancedPrompt = `${systemPrompt}. ${usernamePrefix}${prompt}`;
       const response = await fetch(
-        `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}`
+        `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`
       );
 
       if (!response.ok) {

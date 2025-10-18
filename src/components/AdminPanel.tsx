@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { BroadcastMessage } from "./BroadcastMessage";
+import { ImageModelManager } from "./ImageModelManager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminPanel() {
   const { aiModels, addAIModel, removeAIModel } = useApp();
@@ -99,6 +102,14 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
+      <Tabs defaultValue="text-models" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="text-models">Text AI Models</TabsTrigger>
+          <TabsTrigger value="image-models">Image Models</TabsTrigger>
+          <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="text-models" className="space-y-6 mt-6">
       {/* Add AI Agent Card */}
       <Card className="shadow-lg border-2">
         <CardHeader className="pb-4">
@@ -255,6 +266,16 @@ export function AdminPanel() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="image-models" className="space-y-6 mt-6">
+          <ImageModelManager />
+        </TabsContent>
+
+        <TabsContent value="broadcast" className="space-y-6 mt-6">
+          <BroadcastMessage />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

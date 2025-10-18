@@ -9,6 +9,13 @@ export interface AIModel {
   description?: string;
 }
 
+export interface ImageModel {
+  id: string;
+  name: string;
+  apiEndpoint: string;
+  description?: string;
+}
+
 export interface Announcement {
   id: string;
   title: string;
@@ -27,6 +34,9 @@ interface AppContextType {
   aiModels: AIModel[];
   addAIModel: (model: Omit<AIModel, "id">) => void;
   removeAIModel: (id: string) => void;
+  imageModels: ImageModel[];
+  addImageModel: (model: Omit<ImageModel, "id">) => void;
+  removeImageModel: (id: string) => void;
   announcements: Announcement[];
   addAnnouncement: (announcement: Omit<Announcement, "id" | "createdAt">) => void;
   removeAnnouncement: (id: string) => void;
@@ -58,10 +68,30 @@ const DEFAULT_MODELS: AIModel[] = [
   },
 ];
 
+const DEFAULT_IMAGE_MODELS: ImageModel[] = [
+  {
+    id: "flux",
+    name: "Flux",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "High quality image generation"
+  },
+  {
+    id: "turbo",
+    name: "Turbo",
+    apiEndpoint: "https://image.pollinations.ai/prompt",
+    description: "Fast image generation"
+  }
+];
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [aiModels, setAIModels] = useState<AIModel[]>(() => {
     const stored = localStorage.getItem("aiModels");
     return stored ? JSON.parse(stored) : DEFAULT_MODELS;
+  });
+
+  const [imageModels, setImageModels] = useState<ImageModel[]>(() => {
+    const stored = localStorage.getItem("imageModels");
+    return stored ? JSON.parse(stored) : DEFAULT_IMAGE_MODELS;
   });
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
@@ -85,6 +115,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [aiModels]);
 
   useEffect(() => {
+    localStorage.setItem("imageModels", JSON.stringify(imageModels));
+  }, [imageModels]);
+
+  useEffect(() => {
     localStorage.setItem("announcements", JSON.stringify(announcements));
   }, [announcements]);
 
@@ -102,6 +136,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const removeAIModel = (id: string) => {
     setAIModels((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const addImageModel = (model: Omit<ImageModel, "id">) => {
+    const newModel = { ...model, id: Date.now().toString() };
+    setImageModels((prev) => [...prev, newModel]);
+  };
+
+  const removeImageModel = (id: string) => {
+    setImageModels((prev) => prev.filter((m) => m.id !== id));
   };
 
   const addAnnouncement = (announcement: Omit<Announcement, "id" | "createdAt">) => {
@@ -141,6 +184,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         aiModels,
         addAIModel,
         removeAIModel,
+        imageModels,
+        addImageModel,
+        removeImageModel,
         announcements,
         addAnnouncement,
         removeAnnouncement,
