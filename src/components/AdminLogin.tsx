@@ -40,19 +40,5 @@ export function AdminLogin() {
     return <AdminPasswordPrompt onSuccess={() => setHasEnteredPassword(true)} />;
   }
 
-  return (
-    <div className="min-h-[70vh] flex items-center justify-center p-4 md:p-6">
-      <Card className="w-full max-w-md border-2 shadow-lg bg-primary/5">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-            <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-            Admin Authenticated
-          </CardTitle>
-          <CardDescription className="text-sm">
-            You have admin access. You can now manage the system.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    </div>
-  );
+  return null;
 }

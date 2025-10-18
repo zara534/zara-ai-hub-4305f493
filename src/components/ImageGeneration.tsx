@@ -58,10 +58,22 @@ export function ImageGeneration() {
   const [prompt, setPrompt] = useState("");
   const [lastPrompt, setLastPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
+  const [aspectRatio, setAspectRatio] = useState("1:1");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const { imageModels = DEFAULT_IMAGE_MODELS } = useApp();
+
+  const getImageDimensions = (ratio: string) => {
+    const dimensions: Record<string, { width: number; height: number }> = {
+      "1:1": { width: 1024, height: 1024 },
+      "16:9": { width: 1024, height: 576 },
+      "9:16": { width: 576, height: 1024 },
+      "4:3": { width: 1024, height: 768 },
+      "3:4": { width: 768, height: 1024 },
+    };
+    return dimensions[ratio] || dimensions["1:1"];
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -80,7 +92,8 @@ export function ImageGeneration() {
       const encodedPrompt = encodeURIComponent(fullPrompt);
       const modelType = model.modelType || selectedModel;
       const seed = Date.now();
-      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=1024&height=1024&seed=${seed}`;
+      const { width, height } = getImageDimensions(aspectRatio);
+      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=${width}&height=${height}&seed=${seed}`;
       
       // Test if image loads successfully
       const img = new Image();
@@ -138,18 +151,33 @@ export function ImageGeneration() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select model" />
-            </SelectTrigger>
-            <SelectContent>
-              {imageModels.map((model) => (
-                <SelectItem key={model.id} value={model.id}>
-                  {model.name} {model.description && `- ${model.description}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                {imageModels.map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.name} {model.description && `- ${model.description}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={aspectRatio} onValueChange={setAspectRatio}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select aspect ratio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1:1">Square (1:1)</SelectItem>
+                <SelectItem value="16:9">Landscape (16:9)</SelectItem>
+                <SelectItem value="9:16">Portrait (9:16)</SelectItem>
+                <SelectItem value="4:3">Classic (4:3)</SelectItem>
+                <SelectItem value="3:4">Portrait (3:4)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex gap-2">
             <Input
