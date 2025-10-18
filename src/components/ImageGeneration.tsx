@@ -56,6 +56,7 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
 
 export function ImageGeneration() {
   const [prompt, setPrompt] = useState("");
+  const [lastPrompt, setLastPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export function ImageGeneration() {
 
     setIsLoading(true);
     setError(null);
+    setLastPrompt(prompt);
     try {
       const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
       const fullPrompt = model.systemPrompt 
@@ -99,6 +101,11 @@ export function ImageGeneration() {
       toast.error("Failed to generate image");
       setIsLoading(false);
     }
+  };
+
+  const handleReuse = () => {
+    setPrompt(lastPrompt);
+    setError(null);
   };
 
   const handleDownload = async () => {
@@ -162,32 +169,39 @@ export function ImageGeneration() {
           </div>
 
           {isLoading && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-primary/5 rounded-lg border-2 border-primary/20">
               <div className="relative">
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                <Loader2 className="w-16 h-16 animate-spin text-primary" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <ImageIcon className="w-6 h-6 text-primary/50" />
+                  <ImageIcon className="w-8 h-8 text-primary animate-pulse" />
                 </div>
               </div>
               <div className="text-center">
-                <p className="font-medium">Generating your image...</p>
-                <p className="text-sm text-muted-foreground">This may take a few moments</p>
+                <p className="font-bold text-lg">✨ Creating Your Image</p>
+                <p className="text-sm text-muted-foreground">AI is painting your masterpiece...</p>
               </div>
             </div>
           )}
 
           {error && !isLoading && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-                <span className="text-2xl">❌</span>
+            <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-destructive/10 rounded-lg border-2 border-destructive/30">
+              <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center">
+                <span className="text-5xl">❌</span>
               </div>
               <div className="text-center">
-                <p className="font-medium text-destructive">Generation Failed</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
+                <p className="font-bold text-lg text-destructive">⚠️ Generation Failed</p>
+                <p className="text-sm text-muted-foreground mt-1">{error}</p>
               </div>
-              <Button onClick={handleGenerate} variant="outline">
-                Try Again
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleGenerate} variant="outline">
+                  🔄 Try Again
+                </Button>
+                {lastPrompt && (
+                  <Button onClick={handleReuse} variant="secondary">
+                    ♻️ Reuse Last Prompt
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -213,6 +227,11 @@ export function ImageGeneration() {
                   <ImageIcon className="w-5 h-5 mr-2" />
                   Regenerate
                 </Button>
+                {lastPrompt && lastPrompt !== prompt && (
+                  <Button onClick={handleReuse} variant="outline">
+                    ♻️ Reuse Last
+                  </Button>
+                )}
               </div>
             </div>
           )}

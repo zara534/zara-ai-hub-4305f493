@@ -37,8 +37,10 @@ interface AppContextType {
   aiModels: AIModel[];
   addAIModel: (model: Omit<AIModel, "id">) => void;
   removeAIModel: (id: string) => void;
+  updateTextModel: (id: string, updates: Partial<AIModel>) => void;
   imageModels: ImageModel[];
   addImageModel: (model: Omit<ImageModel, "id">) => void;
+  updateImageModel: (id: string, updates: Partial<ImageModel>) => void;
   removeImageModel: (id: string) => void;
   announcements: Announcement[];
   addAnnouncement: (announcement: Omit<Announcement, "id" | "createdAt">) => void;
@@ -169,9 +171,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAIModels((prev) => prev.filter((m) => m.id !== id));
   };
 
+  const updateTextModel = (id: string, updates: Partial<AIModel>) => {
+    setAIModels((prev) =>
+      prev.map((model) => (model.id === id ? { ...model, ...updates } : model))
+    );
+  };
+
   const addImageModel = (model: Omit<ImageModel, "id">) => {
     const newModel = { ...model, id: Date.now().toString() };
     setImageModels((prev) => [...prev, newModel]);
+  };
+
+  const updateImageModel = (id: string, updates: Partial<ImageModel>) => {
+    setImageModels((prev) =>
+      prev.map((model) => (model.id === id ? { ...model, ...updates } : model))
+    );
   };
 
   const removeImageModel = (id: string) => {
@@ -215,8 +229,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         aiModels,
         addAIModel,
         removeAIModel,
+        updateTextModel,
         imageModels,
         addImageModel,
+        updateImageModel,
         removeImageModel,
         announcements,
         addAnnouncement,

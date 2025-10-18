@@ -1,9 +1,17 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, ShieldCheck } from "lucide-react";
+import { AdminPasswordPrompt } from "@/components/AdminPasswordPrompt";
 
 export function AdminLogin() {
   const { isAdmin } = useAuth();
+  const [hasEnteredPassword, setHasEnteredPassword] = useState(false);
+
+  useEffect(() => {
+    // Reset password requirement when component mounts
+    setHasEnteredPassword(false);
+  }, []);
 
   if (!isAdmin) {
     return (
@@ -26,6 +34,10 @@ export function AdminLogin() {
         </Card>
       </div>
     );
+  }
+
+  if (!hasEnteredPassword) {
+    return <AdminPasswordPrompt onSuccess={() => setHasEnteredPassword(true)} />;
   }
 
   return (

@@ -18,7 +18,7 @@ const POLLINATIONS_MODELS = [
 ];
 
 export function ImageModelManager() {
-  const { imageModels, addImageModel, removeImageModel } = useApp();
+  const { imageModels, addImageModel, removeImageModel, updateImageModel } = useApp();
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🎨");
   const [apiEndpoint, setApiEndpoint] = useState("https://image.pollinations.ai/prompt");
@@ -35,20 +35,14 @@ export function ImageModelManager() {
     
     if (editingId) {
       // Update existing model
-      const updatedModels = imageModels.map(m => 
-        m.id === editingId 
-          ? { 
-              ...m,
-              name: name.trim(), 
-              emoji: emoji.trim(),
-              description: description.trim(),
-              modelType: selectedModel,
-              systemPrompt: systemPrompt.trim()
-            }
-          : m
-      );
-      localStorage.setItem("custom-image-models", JSON.stringify(updatedModels.filter(m => !m.id.startsWith('default'))));
-      toast.success("Image model updated!");
+      updateImageModel(editingId, {
+        name: name.trim(), 
+        emoji: emoji.trim(),
+        description: description.trim(),
+        modelType: selectedModel,
+        systemPrompt: systemPrompt.trim()
+      });
+      toast.success("Image generator updated!");
       setEditingId(null);
     } else {
       // Add new model
@@ -60,7 +54,7 @@ export function ImageModelManager() {
         modelType: selectedModel,
         systemPrompt: systemPrompt.trim()
       });
-      toast.success("Image model added successfully!");
+      toast.success("Image generator added successfully!");
     }
     
     setName("");
@@ -155,14 +149,17 @@ export function ImageModelManager() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="system-prompt" className="text-sm font-medium">System Prompt</Label>
+            <Label htmlFor="system-prompt" className="text-sm font-medium">System Prompt (Instructions for AI)</Label>
             <Textarea
               id="system-prompt"
-              placeholder="e.g., Generate vibrant and colorful images with high detail..."
+              placeholder="e.g., Create photorealistic images with vibrant colors, sharp details, and professional lighting. Focus on composition and depth..."
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              className="min-h-24 border-2"
+              className="min-h-32 border-2"
             />
+            <p className="text-xs text-muted-foreground">
+              This prompt will be prepended to all user prompts, guiding the AI on how to generate images.
+            </p>
           </div>
 
           <div className="space-y-2">

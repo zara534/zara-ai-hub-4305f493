@@ -51,14 +51,13 @@ const Index = () => {
             <TabsContent value="text">
               <TextGeneration />
             </TabsContent>
-          <TabsContent value="image">
-            <ImageGeneration />
-          </TabsContent>
-
-          <TabsContent value="announcements">
-            <AnnouncementsHistory />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="image">
+              <ImageGeneration />
+            </TabsContent>
+            <TabsContent value="announcements">
+              <AnnouncementsHistory />
+            </TabsContent>
+          </Tabs>
         )}
         {currentView === "settings" && <SettingsPanel />}
         {currentView === "admin" && (isAdmin ? <AdminPanel /> : <AdminLogin />)}
