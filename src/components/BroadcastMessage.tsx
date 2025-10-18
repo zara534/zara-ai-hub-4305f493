@@ -9,10 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function BroadcastMessage() {
-  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const handleSendBroadcast = async () => {
     if (!title.trim() || !content.trim()) {
@@ -21,18 +21,18 @@ export function BroadcastMessage() {
     }
 
     if (!user) {
-      toast.error("You must be logged in to send announcements");
+      toast.error("You must be logged in");
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     try {
       const { error } = await supabase
         .from("announcements")
         .insert({
           title: title.trim(),
           content: content.trim(),
-          created_by: user.id
+          created_by: user.id,
         });
 
       if (error) throw error;
@@ -42,9 +42,9 @@ export function BroadcastMessage() {
       setContent("");
     } catch (error) {
       console.error("Error sending broadcast:", error);
-      toast.error("Failed to send broadcast message");
+      toast.error("Failed to send broadcast");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -68,9 +68,9 @@ export function BroadcastMessage() {
           onChange={(e) => setContent(e.target.value)}
           className="min-h-32"
         />
-        <Button onClick={handleSendBroadcast} className="w-full" size="lg" disabled={isLoading}>
+        <Button onClick={handleSendBroadcast} className="w-full" size="lg" disabled={loading}>
           <Send className="w-5 h-5 mr-2" />
-          {isLoading ? "Sending..." : "Send Broadcast"}
+          {loading ? "Sending..." : "Send Broadcast"}
         </Button>
       </CardContent>
     </Card>

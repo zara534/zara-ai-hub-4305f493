@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Settings, Infinity } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Gauge, Infinity } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export function UsageLimitsManager() {
   const [textLimit, setTextLimit] = useState<number | null>(null);
   const [imageLimit, setImageLimit] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [textLimitEnabled, setTextLimitEnabled] = useState(false);
+  const [imageLimitEnabled, setImageLimitEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadLimits();
@@ -25,23 +28,26 @@ export function UsageLimitsManager() {
 
       if (error) throw error;
 
-      setTextLimit(data.daily_text_limit);
-      setImageLimit(data.daily_image_limit);
+      if (data) {
+        setTextLimit(data.text_generation_limit);
+        setImageLimit(data.image_generation_limit);
+        setTextLimitEnabled(data.text_generation_limit !== null);
+        setImageLimitEnabled(data.image_generation_limit !== null);
+      }
     } catch (error) {
       console.error("Error loading limits:", error);
-      toast.error("Failed to load limits");
     }
   };
 
   const handleSaveLimits = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
       const { error } = await supabase
         .from("global_limits")
         .update({
-          daily_text_limit: textLimit,
-          daily_image_limit: imageLimit,
-          updated_at: new Date().toISOString()
+          text_generation_limit: textLimitEnabled ? textLimit : null,
+          image_generation_limit: imageLimitEnabled ? imageLimit : null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", (await supabase.from("global_limits").select("id").single()).data?.id);
 
@@ -49,35 +55,10 @@ export function UsageLimitsManager() {
 
       toast.success("Usage limits updated successfully!");
     } catch (error) {
-      console.error("Error updating limits:", error);
-      toast.error("Failed to update limits");
+      console.error("Error saving limits:", error);
+      toast.error("Failed to save limits");
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemoveLimits = async () => {
-    setTextLimit(null);
-    setImageLimit(null);
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from("global_limits")
-        .update({
-          daily_text_limit: null,
-          daily_image_limit: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", (await supabase.from("global_limits").select("id").single()).data?.id);
-
-      if (error) throw error;
-
-      toast.success("Usage limits removed - users have unlimited access!");
-    } catch (error) {
-      console.error("Error removing limits:", error);
-      toast.error("Failed to remove limits");
-    } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -85,93 +66,87 @@ export function UsageLimitsManager() {
     <Card className="shadow-lg border-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-2xl">
-          <Settings className="w-6 h-6 text-primary" />
-          Manage Daily Usage Limits
+          <Gauge className="w-6 h-6 text-primary" />
+          Daily Usage Limits
         </CardTitle>
+        <CardDescription>
+          Set daily generation limits for all users. Leave disabled for unlimited usage.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="text-limit" className="text-sm font-medium">
-              Daily Text Generation Limit
-            </Label>
-            <div className="flex gap-2">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="text-limit-toggle" className="text-base font-medium">
+                Text Generation Limit
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {textLimitEnabled ? `${textLimit || 0} generations per day` : "Unlimited"}
+              </p>
+            </div>
+            <Switch
+              id="text-limit-toggle"
+              checked={textLimitEnabled}
+              onCheckedChange={setTextLimitEnabled}
+            />
+          </div>
+
+          {textLimitEnabled && (
+            <div className="space-y-2 pl-4">
+              <Label htmlFor="text-limit">Generations per day</Label>
               <Input
                 id="text-limit"
                 type="number"
-                placeholder="Enter limit or leave empty for unlimited"
-                value={textLimit ?? ""}
-                onChange={(e) => setTextLimit(e.target.value ? parseInt(e.target.value) : null)}
                 min="0"
+                value={textLimit || ""}
+                onChange={(e) => setTextLimit(parseInt(e.target.value) || 0)}
+                placeholder="e.g., 50"
               />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setTextLimit(null)}
-                title="Set to unlimited"
-              >
-                <Infinity className="w-4 h-4" />
-              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {textLimit === null ? "Currently: Unlimited" : `Currently: ${textLimit} per day`}
-            </p>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="image-limit-toggle" className="text-base font-medium">
+                Image Generation Limit
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {imageLimitEnabled ? `${imageLimit || 0} generations per day` : "Unlimited"}
+              </p>
+            </div>
+            <Switch
+              id="image-limit-toggle"
+              checked={imageLimitEnabled}
+              onCheckedChange={setImageLimitEnabled}
+            />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="image-limit" className="text-sm font-medium">
-              Daily Image Generation Limit
-            </Label>
-            <div className="flex gap-2">
+          {imageLimitEnabled && (
+            <div className="space-y-2 pl-4">
+              <Label htmlFor="image-limit">Generations per day</Label>
               <Input
                 id="image-limit"
                 type="number"
-                placeholder="Enter limit or leave empty for unlimited"
-                value={imageLimit ?? ""}
-                onChange={(e) => setImageLimit(e.target.value ? parseInt(e.target.value) : null)}
                 min="0"
+                value={imageLimit || ""}
+                onChange={(e) => setImageLimit(parseInt(e.target.value) || 0)}
+                placeholder="e.g., 20"
               />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setImageLimit(null)}
-                title="Set to unlimited"
-              >
-                <Infinity className="w-4 h-4" />
-              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {imageLimit === null ? "Currently: Unlimited" : `Currently: ${imageLimit} per day`}
-            </p>
-          </div>
+          )}
         </div>
 
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleSaveLimits} 
-            disabled={isLoading}
-            className="flex-1"
-          >
-            Save Limits
-          </Button>
-          <Button 
-            onClick={handleRemoveLimits} 
-            disabled={isLoading}
-            variant="outline"
-            className="flex-1"
-          >
-            Remove All Limits
-          </Button>
-        </div>
+        <Button onClick={handleSaveLimits} disabled={loading} className="w-full" size="lg">
+          {loading ? "Saving..." : "Save Limits"}
+        </Button>
 
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-          <h4 className="font-medium text-sm">ℹ️ How it works:</h4>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• Set limits to control how many texts/images users can generate per day</li>
-            <li>• Leave empty or click ∞ for unlimited access</li>
-            <li>• Limits reset automatically at midnight UTC</li>
-            <li>• All users are affected by these global limits</li>
-          </ul>
+        <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <Infinity className="w-5 h-5 text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Limits reset daily at midnight UTC. Users will see their remaining generations.
+          </p>
         </div>
       </CardContent>
     </Card>

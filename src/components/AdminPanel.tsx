@@ -103,13 +103,13 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
-      <Tabs defaultValue="text-models" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="text-models">Text Models</TabsTrigger>
-          <TabsTrigger value="image-models">Images</TabsTrigger>
-          <TabsTrigger value="limits">Limits</TabsTrigger>
-          <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="text-models" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="text-models">Text AI</TabsTrigger>
+            <TabsTrigger value="image-models">Image AI</TabsTrigger>
+            <TabsTrigger value="limits">Limits</TabsTrigger>
+            <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
       {/* Add AI Agent Card */}

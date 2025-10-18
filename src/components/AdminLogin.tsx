@@ -1,16 +1,27 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { Lock, ShieldCheck } from "lucide-react";
 
 export function AdminLogin() {
-  const { isAdmin, isLoading } = useAdminAuth();
+  const { isAdmin } = useAuth();
 
-  if (isLoading) {
+  if (!isAdmin) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4 md:p-6">
-        <Card className="w-full max-w-md border-2 shadow-lg">
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Checking authorization...</p>
+        <Card className="w-full max-w-md border-2 shadow-lg bg-destructive/10">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-xl md:text-2xl text-destructive">
+              <Lock className="w-5 h-5 md:w-6 md:h-6" />
+              Access Denied
+            </CardTitle>
+            <CardDescription className="text-sm">
+              You must be logged in as an admin to access this page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Please contact the system administrator if you believe you should have access.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -19,25 +30,14 @@ export function AdminLogin() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center p-4 md:p-6">
-      <Card className="w-full max-w-md border-2 shadow-lg">
+      <Card className="w-full max-w-md border-2 shadow-lg bg-primary/5">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-            {isAdmin ? (
-              <>
-                <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
-                Admin Authenticated
-              </>
-            ) : (
-              <>
-                <ShieldAlert className="w-5 h-5 md:w-6 md:h-6 text-destructive" />
-                Access Denied
-              </>
-            )}
+            <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+            Admin Authenticated
           </CardTitle>
           <CardDescription className="text-sm">
-            {isAdmin 
-              ? "You have admin privileges" 
-              : "You don't have admin access. Contact the system administrator to get admin role."}
+            You have admin access. You can now manage the system.
           </CardDescription>
         </CardHeader>
       </Card>

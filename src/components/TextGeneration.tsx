@@ -5,12 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Download, Copy, Check, RefreshCw } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, RefreshCw, StopCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { TextGenerationController } from "@/components/TextGenerationController";
 
 interface Message {
   id: string;
@@ -25,52 +26,12 @@ export function TextGeneration() {
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [stopGeneration, setStopGeneration] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [clearOnSwitch, setClearOnSwitch] = useState(true);
   const [username, setUsername] = useState<string>("");
-  const [usage, setUsage] = useState({ count: 0, limit: null as number | null });
+  const [stopGeneration, setStopGeneration] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousModelRef = useRef<string>(selectedModel);
-
-  useEffect(() => {
-    checkUsage();
-  }, [user]);
-
-  const checkUsage = async () => {
-    if (!user) return;
-    
-    try {
-      const { data: limitsData } = await supabase
-        .from("global_limits")
-        .select("daily_text_limit")
-        .single();
-
-      const { data: usageData } = await supabase
-        .from("user_usage_limits")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (usageData && usageData.last_reset_date !== new Date().toISOString().split('T')[0]) {
-        await supabase
-          .from("user_usage_limits")
-          .update({
-            text_count: 0,
-            last_reset_date: new Date().toISOString().split('T')[0]
-          })
-          .eq("user_id", user.id);
-        setUsage({ count: 0, limit: limitsData?.daily_text_limit });
-      } else {
-        setUsage({ 
-          count: usageData?.text_count || 0, 
-          limit: limitsData?.daily_text_limit 
-        });
-      }
-    } catch (error) {
-      console.error("Error checking usage:", error);
-    }
-  };
 
   useEffect(() => {
     loadUsername();
@@ -111,11 +72,6 @@ export function TextGeneration() {
       return;
     }
 
-    if (usage.limit !== null && usage.count >= usage.limit) {
-      toast.error(`Daily limit reached! You can generate ${usage.limit} texts per day.`);
-      return;
-    }
-
     const model = aiModels.find((m) => m.id === selectedModel);
     if (!model) {
       toast.error("Please select an AI model");
@@ -138,7 +94,7 @@ export function TextGeneration() {
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
       const usernamePrefix = username ? `The user's name is ${username}. ` : "";
-      const enhancedPrompt = `${systemPrompt}. ${usernamePrefix}${userMessage.content}`;
+      const enhancedPrompt = `${systemPrompt}. ${usernamePrefix}${prompt}`;
       const response = await fetch(
         `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`
       );
@@ -175,36 +131,6 @@ export function TextGeneration() {
       
       if (!stopGeneration) {
         toast.success("Response complete!");
-        
-        // Update usage count
-        if (user) {
-          try {
-            const { data: existingUsage } = await supabase
-              .from("user_usage_limits")
-              .select("*")
-              .eq("user_id", user.id)
-              .maybeSingle();
-
-            if (existingUsage) {
-              await supabase
-                .from("user_usage_limits")
-                .update({ text_count: existingUsage.text_count + 1 })
-                .eq("user_id", user.id);
-            } else {
-              await supabase
-                .from("user_usage_limits")
-                .insert({
-                  user_id: user.id,
-                  text_count: 1,
-                  image_count: 0,
-                  last_reset_date: new Date().toISOString().split('T')[0]
-                });
-            }
-            checkUsage();
-          } catch (err) {
-            console.error("Error updating usage:", err);
-          }
-        }
       }
     } catch (error) {
       console.error("Error:", error);
@@ -214,6 +140,10 @@ export function TextGeneration() {
       setIsLoading(false);
       setStopGeneration(false);
     }
+  };
+
+  const handleStopGeneration = () => {
+    setStopGeneration(true);
   };
 
   const handleCopy = async (text: string, messageId: string) => {
@@ -250,7 +180,7 @@ export function TextGeneration() {
     <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
-          <div className="flex items-start md:items-center gap-2 md:gap-3 flex-col md:flex-row justify-between">
+          <div className="flex items-start md:items-center gap-2 md:gap-3 flex-col md:flex-row">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-full md:w-[280px]">
                 <SelectValue placeholder="Choose AI Agent" />
@@ -266,13 +196,7 @@ export function TextGeneration() {
                 ))}
               </SelectContent>
             </Select>
-            {usage.limit !== null && (
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {usage.count} / {usage.limit} today
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
+            <div className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
               {selectedModelData && (
                 <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 flex-1">
                   {selectedModelData.description || selectedModelData.behavior}
@@ -314,13 +238,18 @@ export function TextGeneration() {
                       <span className="hidden md:inline">Download</span>
                     </Button>
                   </>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Card className="min-h-[450px] md:min-h-[550px] flex flex-col shadow-lg border-2">
+        <TextGenerationController 
+          onStop={handleStopGeneration}
+          isGenerating={isLoading}
+        />
         <ScrollArea className="flex-1 p-3 md:p-6" ref={scrollRef}>
           <div className="space-y-4 md:space-y-6">
             {messages.length === 0 ? (
@@ -405,25 +334,18 @@ export function TextGeneration() {
               className="min-h-[50px] md:min-h-[60px] resize-none text-sm md:text-base"
               disabled={isLoading}
             />
-            {isLoading ? (
-              <Button
-                onClick={() => setStopGeneration(true)}
-                variant="destructive"
-                size="icon"
-                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
-              >
-                <span className="text-xs font-bold">STOP</span>
-              </Button>
-            ) : (
-              <Button
-                onClick={handleGenerate}
-                disabled={!prompt.trim()}
-                size="icon"
-                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
-              >
+            <Button
+              onClick={handleGenerate}
+              disabled={isLoading || !prompt.trim()}
+              size="icon"
+              className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+              ) : (
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
-              </Button>
-            )}
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
