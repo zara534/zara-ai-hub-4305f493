@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Image as ImageIcon } from "lucide-react";
+import { Loader2, Download, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 
@@ -46,7 +46,8 @@ export function ImageGeneration() {
     try {
       const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
       const encodedPrompt = encodeURIComponent(prompt);
-      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${selectedModel}&nologo=true&width=1024&height=1024`;
+      const seed = Date.now();
+      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${model.apiEndpoint.includes('pollinations') ? selectedModel : model.name}&nologo=true&width=1024&height=1024&seed=${seed}`;
       
       setGeneratedImage(imageUrl);
       toast.success("Image generated successfully!");
@@ -80,41 +81,62 @@ export function ImageGeneration() {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
-      <Card className="shadow-lg border-2">
+      <Card className="shadow-lg border-2 bg-gradient-to-br from-background to-muted/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
-            <ImageIcon className="w-6 h-6" />
+            <Wand2 className="w-6 h-6 text-primary" />
             AI Image Generator
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select model" />
-            </SelectTrigger>
-            <SelectContent>
-              {imageModels.map((model) => (
-                <SelectItem key={model.id} value={model.id}>
-                  {model.name} {model.description && `- ${model.description}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Select Model
+            </label>
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger className="border-2">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                {imageModels.map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{model.name}</span>
+                      {model.description && (
+                        <span className="text-xs text-muted-foreground">{model.description}</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <div className="flex gap-2">
-            <Input
-              placeholder="Describe the image you want to generate..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
-            />
-            <Button onClick={handleGenerate} disabled={isLoading} size="lg">
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <ImageIcon className="w-5 h-5" />
-              )}
-            </Button>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Image Prompt</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Describe the image you want to generate..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !isLoading && handleGenerate()}
+                className="border-2"
+              />
+              <Button onClick={handleGenerate} disabled={isLoading} size="lg" className="gap-2">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-5 h-5" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {isLoading && (
