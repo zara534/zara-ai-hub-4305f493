@@ -5,13 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Download, Copy, Check, RefreshCw, StopCircle } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { TextGenerationController } from "@/components/TextGenerationController";
 
 interface Message {
   id: string;
@@ -29,7 +28,6 @@ export function TextGeneration() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [clearOnSwitch, setClearOnSwitch] = useState(true);
   const [username, setUsername] = useState<string>("");
-  const [stopGeneration, setStopGeneration] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousModelRef = useRef<string>(selectedModel);
 
@@ -87,7 +85,6 @@ export function TextGeneration() {
     setMessages((prev) => [...prev, userMessage]);
     setPrompt("");
     setIsLoading(true);
-    setStopGeneration(false);
 
     const assistantId = (Date.now() + 1).toString();
 
@@ -116,10 +113,6 @@ export function TextGeneration() {
       const chars = fullText.split("");
       
       for (let i = 0; i < chars.length; i++) {
-        if (stopGeneration) {
-          toast.info("Generation stopped");
-          break;
-        }
         currentText += chars[i];
         setMessages((prev) =>
           prev.map((msg) =>
@@ -129,21 +122,14 @@ export function TextGeneration() {
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
       
-      if (!stopGeneration) {
-        toast.success("Response complete!");
-      }
+      toast.success("Response complete!");
     } catch (error) {
       console.error("Error:", error);
       toast.error("Failed to generate text. Please try again.");
       setMessages((prev) => prev.filter((msg) => msg.id !== assistantId));
     } finally {
       setIsLoading(false);
-      setStopGeneration(false);
     }
-  };
-
-  const handleStopGeneration = () => {
-    setStopGeneration(true);
   };
 
   const handleCopy = async (text: string, messageId: string) => {
@@ -246,10 +232,6 @@ export function TextGeneration() {
       </Card>
 
       <Card className="min-h-[450px] md:min-h-[550px] flex flex-col shadow-lg border-2">
-        <TextGenerationController 
-          onStop={handleStopGeneration}
-          isGenerating={isLoading}
-        />
         <ScrollArea className="flex-1 p-3 md:p-6" ref={scrollRef}>
           <div className="space-y-4 md:space-y-6">
             {messages.length === 0 ? (
