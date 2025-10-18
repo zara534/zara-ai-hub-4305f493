@@ -38,28 +38,7 @@ export function BroadcastMessage() {
 
       if (error) {
         console.error("Broadcast error details:", error);
-        const msg = String(error?.message || "");
-        if (error?.code === "42P01" || msg.includes("announcements") || msg.includes("relation")) {
-          // Fallback: store locally so admin can continue using the panel
-          const local = localStorage.getItem("local_announcements");
-          const list = local ? JSON.parse(local) : [];
-          const localAnnouncement = {
-            id: Date.now().toString(),
-            title: title.trim(),
-            content: content.trim(),
-            created_by: user.id,
-            ai_model_name: "Admin",
-            likes: 0,
-            dislikes: 0,
-            created_at: new Date().toISOString(),
-          };
-          localStorage.setItem("local_announcements", JSON.stringify([localAnnouncement, ...list]));
-          toast.success("Broadcast saved locally (DB not set up). See DATABASE_SETUP.md to enable sync.");
-          setTitle("");
-          setContent("");
-        } else {
-          toast.error(`Failed to send: ${error.message}`);
-        }
+        toast.error(`Failed to send: ${error.message}`);
         setLoading(false);
         return;
       }
