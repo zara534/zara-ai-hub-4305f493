@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Download, Copy, Check } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +28,7 @@ export function TextGeneration() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [username, setUsername] = useState<string>("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     loadUsername();
@@ -79,6 +80,7 @@ export function TextGeneration() {
     setIsLoading(true);
 
     const assistantId = (Date.now() + 1).toString();
+    abortControllerRef.current = new AbortController();
 
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
@@ -88,7 +90,8 @@ export function TextGeneration() {
         : "";
       const enhancedPrompt = `${systemPrompt}. ${usernameContext}\n\nConversation:\n${conversationHistory}user: ${prompt}`;
       const response = await fetch(
-        `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`
+        `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`,
+        { signal: abortControllerRef.current.signal }
       );
 
       if (!response.ok) {
@@ -108,6 +111,10 @@ export function TextGeneration() {
       const chars = fullText.split("");
       
       for (let i = 0; i < chars.length; i++) {
+        if (abortControllerRef.current?.signal.aborted) {
+          toast.info("Generation stopped");
+          break;
+        }
         currentText += chars[i];
         setMessages((prev) =>
           prev.map((msg) =>
@@ -117,13 +124,26 @@ export function TextGeneration() {
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
       
-      toast.success("Response complete!");
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Failed to generate text. Please try again.");
-      setMessages((prev) => prev.filter((msg) => msg.id !== assistantId));
+      if (!abortControllerRef.current?.signal.aborted) {
+        toast.success("Response complete!");
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast.info("Generation stopped");
+      } else {
+        console.error("Error:", error);
+        toast.error("Failed to generate text. Please try again.");
+        setMessages((prev) => prev.filter((msg) => msg.id !== assistantId));
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleStopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -280,24 +300,31 @@ export function TextGeneration() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  handleGenerate();
+                  if (!isLoading) handleGenerate();
                 }
               }}
               className="min-h-[50px] md:min-h-[60px] resize-none text-sm md:text-base"
               disabled={isLoading}
             />
-            <Button
-              onClick={handleGenerate}
-              disabled={isLoading || !prompt.trim()}
-              size="icon"
-              className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-              ) : (
+            {isLoading ? (
+              <Button
+                onClick={handleStopGeneration}
+                size="icon"
+                variant="destructive"
+                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
+              >
+                <X className="w-4 h-4 md:w-5 md:h-5" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleGenerate}
+                disabled={!prompt.trim()}
+                size="icon"
+                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
+              >
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
