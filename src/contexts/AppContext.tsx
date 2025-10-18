@@ -16,6 +16,7 @@ export interface ImageModel {
   description?: string;
   modelType?: string;
   systemPrompt?: string;
+  emoji?: string;
 }
 
 export interface Announcement {

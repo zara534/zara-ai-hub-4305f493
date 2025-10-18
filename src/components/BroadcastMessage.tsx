@@ -3,42 +3,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, X } from "lucide-react";
+import { Send } from "lucide-react";
 import { toast } from "sonner";
-
-interface Message {
-  id: string;
-  title: string;
-  content: string;
-  timestamp: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function BroadcastMessage() {
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendBroadcast = () => {
+  const handleSendBroadcast = async () => {
     if (!title.trim() || !content.trim()) {
       toast.error("Please fill in both title and message");
       return;
     }
 
-    const message: Message = {
-      id: Date.now().toString(),
-      title: title.trim(),
-      content: content.trim(),
-      timestamp: new Date().toISOString(),
-    };
+    if (!user) {
+      toast.error("You must be logged in to send announcements");
+      return;
+    }
 
-    const existingMessages = JSON.parse(localStorage.getItem("broadcast-messages") || "[]");
-    localStorage.setItem("broadcast-messages", JSON.stringify([message, ...existingMessages]));
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("announcements")
+        .insert({
+          title: title.trim(),
+          content: content.trim(),
+          created_by: user.id
+        });
 
-    toast.success("Broadcast message sent to all users!");
-    setTitle("");
-    setContent("");
-    
-    // Trigger a custom event so other components can react
-    window.dispatchEvent(new CustomEvent("new-broadcast"));
+      if (error) throw error;
+
+      toast.success("Broadcast message sent to all users!");
+      setTitle("");
+      setContent("");
+    } catch (error) {
+      console.error("Error sending broadcast:", error);
+      toast.error("Failed to send broadcast message");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,9 +68,9 @@ export function BroadcastMessage() {
           onChange={(e) => setContent(e.target.value)}
           className="min-h-32"
         />
-        <Button onClick={handleSendBroadcast} className="w-full" size="lg">
+        <Button onClick={handleSendBroadcast} className="w-full" size="lg" disabled={isLoading}>
           <Send className="w-5 h-5 mr-2" />
-          Send Broadcast
+          {isLoading ? "Sending..." : "Send Broadcast"}
         </Button>
       </CardContent>
     </Card>

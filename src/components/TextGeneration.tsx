@@ -25,11 +25,52 @@ export function TextGeneration() {
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [stopGeneration, setStopGeneration] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [clearOnSwitch, setClearOnSwitch] = useState(true);
   const [username, setUsername] = useState<string>("");
+  const [usage, setUsage] = useState({ count: 0, limit: null as number | null });
   const scrollRef = useRef<HTMLDivElement>(null);
   const previousModelRef = useRef<string>(selectedModel);
+
+  useEffect(() => {
+    checkUsage();
+  }, [user]);
+
+  const checkUsage = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: limitsData } = await supabase
+        .from("global_limits")
+        .select("daily_text_limit")
+        .single();
+
+      const { data: usageData } = await supabase
+        .from("user_usage_limits")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (usageData && usageData.last_reset_date !== new Date().toISOString().split('T')[0]) {
+        await supabase
+          .from("user_usage_limits")
+          .update({
+            text_count: 0,
+            last_reset_date: new Date().toISOString().split('T')[0]
+          })
+          .eq("user_id", user.id);
+        setUsage({ count: 0, limit: limitsData?.daily_text_limit });
+      } else {
+        setUsage({ 
+          count: usageData?.text_count || 0, 
+          limit: limitsData?.daily_text_limit 
+        });
+      }
+    } catch (error) {
+      console.error("Error checking usage:", error);
+    }
+  };
 
   useEffect(() => {
     loadUsername();
@@ -70,6 +111,11 @@ export function TextGeneration() {
       return;
     }
 
+    if (usage.limit !== null && usage.count >= usage.limit) {
+      toast.error(`Daily limit reached! You can generate ${usage.limit} texts per day.`);
+      return;
+    }
+
     const model = aiModels.find((m) => m.id === selectedModel);
     if (!model) {
       toast.error("Please select an AI model");
@@ -85,14 +131,14 @@ export function TextGeneration() {
     setMessages((prev) => [...prev, userMessage]);
     setPrompt("");
     setIsLoading(true);
+    setStopGeneration(false);
 
-    // Streaming message will be added when response arrives
     const assistantId = (Date.now() + 1).toString();
 
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
       const usernamePrefix = username ? `The user's name is ${username}. ` : "";
-      const enhancedPrompt = `${systemPrompt}. ${usernamePrefix}${prompt}`;
+      const enhancedPrompt = `${systemPrompt}. ${usernamePrefix}${userMessage.content}`;
       const response = await fetch(
         `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`
       );
@@ -103,7 +149,6 @@ export function TextGeneration() {
 
       const fullText = await response.text();
       
-      // Add assistant message with streaming effect
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
@@ -111,29 +156,63 @@ export function TextGeneration() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
       
-      // Stream text character by character for smooth effect
       let currentText = "";
       const chars = fullText.split("");
       
       for (let i = 0; i < chars.length; i++) {
+        if (stopGeneration) {
+          toast.info("Generation stopped");
+          break;
+        }
         currentText += chars[i];
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantId ? { ...msg, content: currentText } : msg
           )
         );
-        // Smooth character-by-character streaming with typing sound effect
         await new Promise((resolve) => setTimeout(resolve, 20));
       }
       
-      toast.success("Response complete!");
+      if (!stopGeneration) {
+        toast.success("Response complete!");
+        
+        // Update usage count
+        if (user) {
+          try {
+            const { data: existingUsage } = await supabase
+              .from("user_usage_limits")
+              .select("*")
+              .eq("user_id", user.id)
+              .maybeSingle();
+
+            if (existingUsage) {
+              await supabase
+                .from("user_usage_limits")
+                .update({ text_count: existingUsage.text_count + 1 })
+                .eq("user_id", user.id);
+            } else {
+              await supabase
+                .from("user_usage_limits")
+                .insert({
+                  user_id: user.id,
+                  text_count: 1,
+                  image_count: 0,
+                  last_reset_date: new Date().toISOString().split('T')[0]
+                });
+            }
+            checkUsage();
+          } catch (err) {
+            console.error("Error updating usage:", err);
+          }
+        }
+      }
     } catch (error) {
       console.error("Error:", error);
       toast.error("Failed to generate text. Please try again.");
-      // Remove the placeholder message on error
       setMessages((prev) => prev.filter((msg) => msg.id !== assistantId));
     } finally {
       setIsLoading(false);
+      setStopGeneration(false);
     }
   };
 
@@ -171,7 +250,7 @@ export function TextGeneration() {
     <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
-          <div className="flex items-start md:items-center gap-2 md:gap-3 flex-col md:flex-row">
+          <div className="flex items-start md:items-center gap-2 md:gap-3 flex-col md:flex-row justify-between">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-full md:w-[280px]">
                 <SelectValue placeholder="Choose AI Agent" />
@@ -187,7 +266,13 @@ export function TextGeneration() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
+            {usage.limit !== null && (
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                {usage.count} / {usage.limit} today
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
               {selectedModelData && (
                 <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 flex-1">
                   {selectedModelData.description || selectedModelData.behavior}
@@ -229,8 +314,7 @@ export function TextGeneration() {
                       <span className="hidden md:inline">Download</span>
                     </Button>
                   </>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -321,18 +405,25 @@ export function TextGeneration() {
               className="min-h-[50px] md:min-h-[60px] resize-none text-sm md:text-base"
               disabled={isLoading}
             />
-            <Button
-              onClick={handleGenerate}
-              disabled={isLoading || !prompt.trim()}
-              size="icon"
-              className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-              ) : (
+            {isLoading ? (
+              <Button
+                onClick={() => setStopGeneration(true)}
+                variant="destructive"
+                size="icon"
+                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
+              >
+                <span className="text-xs font-bold">STOP</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={handleGenerate}
+                disabled={!prompt.trim()}
+                size="icon"
+                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
+              >
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

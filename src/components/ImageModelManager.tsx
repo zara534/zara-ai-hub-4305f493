@@ -24,10 +24,11 @@ export function ImageModelManager() {
   const [description, setDescription] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [emoji, setEmoji] = useState("");
 
   const handleAddModel = () => {
-    if (!name.trim()) {
-      toast.error("Please enter a name for the model");
+    if (!name.trim() || !emoji.trim()) {
+      toast.error("Please enter a name and emoji for the model");
       return;
     }
     
@@ -36,15 +37,17 @@ export function ImageModelManager() {
       apiEndpoint: apiEndpoint.trim(),
       description: description.trim(),
       modelType: selectedModel,
-      systemPrompt: systemPrompt.trim()
+      systemPrompt: systemPrompt.trim(),
+      emoji: emoji.trim()
     });
     
-    toast.success("Image model added successfully!");
+    toast.success("Image generator added successfully!");
     setName("");
     setApiEndpoint("https://image.pollinations.ai/prompt");
     setDescription("");
     setSelectedModel("flux");
     setSystemPrompt("");
+    setEmoji("");
   };
 
   return (
@@ -57,15 +60,28 @@ export function ImageModelManager() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="model-name" className="text-sm font-medium">Model Name *</Label>
-            <Input
-              id="model-name"
-              placeholder="e.g., My Custom Generator"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border-2"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="model-name" className="text-sm font-medium">Model Name *</Label>
+              <Input
+                id="model-name"
+                placeholder="e.g., My Custom Generator"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border-2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emoji" className="text-sm font-medium">Emoji Icon *</Label>
+              <Input
+                id="emoji"
+                placeholder="e.g., 🎨"
+                value={emoji}
+                onChange={(e) => setEmoji(e.target.value)}
+                maxLength={4}
+                className="border-2"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -153,7 +169,11 @@ export function ImageModelManager() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <ImageIcon className="w-5 h-5 text-primary" />
+                          {model.emoji ? (
+                            <span className="text-2xl">{model.emoji}</span>
+                          ) : (
+                            <ImageIcon className="w-5 h-5 text-primary" />
+                          )}
                         </div>
                         <div>
                           <h3 className="font-bold text-base">{model.name}</h3>

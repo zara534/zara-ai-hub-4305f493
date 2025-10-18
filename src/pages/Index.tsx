@@ -7,14 +7,15 @@ import { AdminLogin } from "@/components/AdminLogin";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
-import { useApp } from "@/contexts/AppContext";
 import { Loader2 } from "lucide-react";
 import { BroadcastViewer } from "@/components/BroadcastViewer";
+import { AnnouncementsHistory } from "@/components/AnnouncementsHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 const Index = () => {
   const { user, session } = useAuth();
-  const { isAdmin } = useApp();
+  const { isAdmin } = useAdminAuth();
   const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<"home" | "admin" | "settings">("home");
   const [isLoading, setIsLoading] = useState(true);
@@ -42,15 +43,19 @@ const Index = () => {
       <main className="container mx-auto py-4 md:py-8 px-0 md:px-4">
         {currentView === "home" && (
           <Tabs defaultValue="text" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="text">Text Generation</TabsTrigger>
-              <TabsTrigger value="image">Image Generation</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="text">Text</TabsTrigger>
+              <TabsTrigger value="image">Image</TabsTrigger>
+              <TabsTrigger value="announcements">Announcements</TabsTrigger>
             </TabsList>
             <TabsContent value="text">
               <TextGeneration />
             </TabsContent>
             <TabsContent value="image">
               <ImageGeneration />
+            </TabsContent>
+            <TabsContent value="announcements">
+              <AnnouncementsHistory />
             </TabsContent>
           </Tabs>
         )}
