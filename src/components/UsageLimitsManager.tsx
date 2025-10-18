@@ -34,9 +34,14 @@ export function UsageLimitsManager() {
         setTextLimitEnabled(data.text_generation_limit !== null);
         setImageLimitEnabled(data.image_generation_limit !== null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading limits:", error);
-      toast.error("Failed to load limits");
+      const msg = String(error?.message || "");
+      if (msg.includes("global_limits") || msg.includes("relation") || error?.code === "42P01") {
+        toast.error("Database setup required: create global_limits (see DATABASE_SETUP.md)");
+      } else {
+        toast.error("Failed to load limits");
+      }
     }
   };
 
@@ -77,7 +82,12 @@ export function UsageLimitsManager() {
       await loadLimits(); // Reload to get the latest data
     } catch (error: any) {
       console.error("Error saving limits:", error);
-      toast.error(`Failed to save limits: ${error?.message || "Unknown error"}`);
+      const msg = String(error?.message || "");
+      if (msg.includes("global_limits") || msg.includes("relation") || error?.code === "42P01") {
+        toast.error("Database setup required: create global_limits (see DATABASE_SETUP.md)");
+      } else {
+        toast.error(`Failed to save limits: ${error?.message || "Unknown error"}`);
+      }
     } finally {
       setLoading(false);
     }

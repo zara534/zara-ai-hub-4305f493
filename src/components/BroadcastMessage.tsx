@@ -38,7 +38,12 @@ export function BroadcastMessage() {
 
       if (error) {
         console.error("Broadcast error details:", error);
-        toast.error(`Failed to send: ${error.message}`);
+        const msg = String(error?.message || "");
+        if (error?.code === "42P01" || msg.includes("announcements") || msg.includes("relation")) {
+          toast.error("Database setup required: create announcements (see DATABASE_SETUP.md)");
+        } else {
+          toast.error(`Failed to send: ${error.message}`);
+        }
         setLoading(false);
         return;
       }
