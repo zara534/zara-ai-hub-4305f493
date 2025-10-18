@@ -38,7 +38,19 @@ export function UsageLimitsManager() {
       console.error("Error loading limits:", error);
       const msg = String(error?.message || "");
       if (msg.includes("global_limits") || msg.includes("relation") || error?.code === "42P01") {
-        toast.error("Database setup required: create global_limits (see DATABASE_SETUP.md)");
+        const local = localStorage.getItem("global_limits_local");
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            setTextLimit(parsed.text_generation_limit ?? null);
+            setImageLimit(parsed.image_generation_limit ?? null);
+            setTextLimitEnabled(parsed.text_generation_limit !== null);
+            setImageLimitEnabled(parsed.image_generation_limit !== null);
+            toast.info("Using local limits (database not set up)");
+          } catch {}
+        } else {
+          toast.error("Database setup required: create global_limits (see DATABASE_SETUP.md)");
+        }
       } else {
         toast.error("Failed to load limits");
       }
@@ -84,7 +96,16 @@ export function UsageLimitsManager() {
       console.error("Error saving limits:", error);
       const msg = String(error?.message || "");
       if (msg.includes("global_limits") || msg.includes("relation") || error?.code === "42P01") {
-        toast.error("Database setup required: create global_limits (see DATABASE_SETUP.md)");
+        const fallback = {
+          text_generation_limit: textLimitEnabled ? textLimit : null,
+          image_generation_limit: imageLimitEnabled ? imageLimit : null,
+        };
+        localStorage.setItem("global_limits_local", JSON.stringify(fallback));
+        setTextLimit(fallback.text_generation_limit);
+        setImageLimit(fallback.image_generation_limit);
+        setTextLimitEnabled(fallback.text_generation_limit !== null);
+        setImageLimitEnabled(fallback.image_generation_limit !== null);
+        toast.success("Saved locally (DB not set up). Run DATABASE_SETUP.md to enable shared limits.");
       } else {
         toast.error(`Failed to save limits: ${error?.message || "Unknown error"}`);
       }

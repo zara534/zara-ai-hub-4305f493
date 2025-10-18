@@ -68,9 +68,17 @@ export function AnnouncementsHistory() {
       });
 
       setAnnouncements(enrichedAnnouncements);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading announcements:", error);
-      toast.error("Failed to load announcements");
+      const msg = String(error?.message || "");
+      if (msg.includes("announcements") || msg.includes("relation") || error?.code === "42P01") {
+        const local = localStorage.getItem("local_announcements");
+        const list = local ? JSON.parse(local) : [];
+        setAnnouncements(list);
+        toast.info("Showing local announcements (DB not set up)");
+      } else {
+        toast.error("Failed to load announcements");
+      }
     } finally {
       setLoading(false);
     }
@@ -102,9 +110,14 @@ export function AnnouncementsHistory() {
       }
 
       loadAnnouncements();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating reaction:", error);
-      toast.error("Failed to update reaction");
+      const msg = String(error?.message || "");
+      if (msg.includes("announcement_reactions") || msg.includes("relation") || error?.code === "42P01") {
+        toast.info("Reactions unavailable until database is set up (see DATABASE_SETUP.md)");
+      } else {
+        toast.error("Failed to update reaction");
+      }
     }
   };
 
@@ -121,9 +134,19 @@ export function AnnouncementsHistory() {
 
       toast.success("Announcement deleted");
       loadAnnouncements();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting announcement:", error);
-      toast.error("Failed to delete announcement");
+      const msg = String(error?.message || "");
+      if (msg.includes("announcements") || msg.includes("relation") || error?.code === "42P01") {
+        const local = localStorage.getItem("local_announcements");
+        const list = local ? JSON.parse(local) : [];
+        const next = list.filter((a: any) => a.id === announcementId ? false : true);
+        localStorage.setItem("local_announcements", JSON.stringify(next));
+        setAnnouncements(next);
+        toast.success("Local announcement deleted");
+      } else {
+        toast.error("Failed to delete announcement");
+      }
     }
   };
 
