@@ -10,10 +10,12 @@ import { useApp } from "@/contexts/AppContext";
 interface ImageModel {
   id: string;
   name: string;
+  emoji?: string;
   apiEndpoint: string;
   description?: string;
   modelType?: string;
   systemPrompt?: string;
+  examplePrompts?: string[];
 }
 
 interface GeneratedImage {
@@ -27,37 +29,47 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
   {
     id: "flux",
     name: "Flux",
+    emoji: "⚡",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "High quality image generation (Default)",
-    modelType: "flux"
+    modelType: "flux",
+    examplePrompts: ["A beautiful sunset over mountains", "A cute cat wearing sunglasses"]
   },
   {
     id: "stable-diffusion-xl",
     name: "Stable Diffusion XL",
+    emoji: "🎨",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "Stable Diffusion XL model",
-    modelType: "stable-diffusion-xl"
+    modelType: "stable-diffusion-xl",
+    examplePrompts: ["Abstract art with vibrant colors", "Fantasy landscape with dragons"]
   },
   {
     id: "dall-e-3",
     name: "DALL-E 3",
+    emoji: "🖼️",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "OpenAI's DALL-E 3",
-    modelType: "dall-e-3"
+    modelType: "dall-e-3",
+    examplePrompts: ["Photorealistic portrait of a person", "Modern architecture building"]
   },
   {
     id: "playground-v2.5",
     name: "Playground v2.5",
+    emoji: "🎪",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "Playground v2.5",
-    modelType: "playground-v2.5"
+    modelType: "playground-v2.5",
+    examplePrompts: ["Cartoon character design", "Sci-fi spaceship concept art"]
   },
   {
     id: "dpo",
     name: "DPO",
+    emoji: "🚀",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "DPO model",
-    modelType: "dpo"
+    modelType: "dpo",
+    examplePrompts: ["Logo design for tech startup", "Minimalist poster design"]
   }
 ];
 
@@ -168,6 +180,13 @@ export function ImageGeneration() {
     toast.success("Image removed");
   };
 
+  const handleExamplePromptClick = (examplePrompt: string) => {
+    setPrompt(examplePrompt);
+    toast.success("Example prompt loaded!");
+  };
+
+  const selectedModelData = imageModels.find(m => m.id === selectedModel);
+
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
       <Card className="shadow-lg border-2">
@@ -186,7 +205,10 @@ export function ImageGeneration() {
               <SelectContent>
                 {imageModels.map((model) => (
                   <SelectItem key={model.id} value={model.id}>
-                    {model.name} {model.description && `- ${model.description}`}
+                    <div className="flex items-center gap-2">
+                      {model.emoji && <span className="text-lg">{model.emoji}</span>}
+                      <span>{model.name}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -205,6 +227,25 @@ export function ImageGeneration() {
               </SelectContent>
             </Select>
           </div>
+
+          {selectedModelData?.examplePrompts && selectedModelData.examplePrompts.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Try these examples:</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedModelData.examplePrompts.map((example, idx) => (
+                  <Button
+                    key={idx}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExamplePromptClick(example)}
+                    className="text-xs"
+                  >
+                    {example}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Input

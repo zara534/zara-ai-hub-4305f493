@@ -85,10 +85,19 @@ export function TextGeneration() {
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
       const usernameContext = username ? `Remember: The user's name is ${username}. Address them by name when appropriate. ` : "";
+      
+      // Limit conversation history to prevent message overflow
       const conversationHistory = messages.length > 0 
-        ? messages.slice(-4).map(m => `${m.role}: ${m.content}`).join("\n") + "\n" 
+        ? messages.slice(-3).map(m => {
+            const truncatedContent = m.content.length > 500 ? m.content.substring(0, 500) + "..." : m.content;
+            return `${m.role}: ${truncatedContent}`;
+          }).join("\n") + "\n" 
         : "";
-      const enhancedPrompt = `${systemPrompt}. ${usernameContext}\n\nConversation:\n${conversationHistory}user: ${prompt}`;
+      
+      // Truncate prompt if too long
+      const truncatedPrompt = prompt.length > 1000 ? prompt.substring(0, 1000) + "..." : prompt;
+      const enhancedPrompt = `${systemPrompt}. ${usernameContext}\n\nConversation:\n${conversationHistory}user: ${truncatedPrompt}`;
+      
       const response = await fetch(
         `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`,
         { signal: abortControllerRef.current.signal }

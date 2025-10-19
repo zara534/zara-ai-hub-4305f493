@@ -25,6 +25,8 @@ export function ImageModelManager() {
   const [description, setDescription] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [examplePrompts, setExamplePrompts] = useState<string[]>([]);
+  const [currentExamplePrompt, setCurrentExamplePrompt] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAddModel = () => {
@@ -40,7 +42,8 @@ export function ImageModelManager() {
         emoji: emoji.trim(),
         description: description.trim(),
         modelType: selectedModel,
-        systemPrompt: systemPrompt.trim()
+        systemPrompt: systemPrompt.trim(),
+        examplePrompts: examplePrompts
       });
       toast.success("Image generator updated!");
       setEditingId(null);
@@ -52,7 +55,8 @@ export function ImageModelManager() {
         apiEndpoint: apiEndpoint.trim(),
         description: description.trim(),
         modelType: selectedModel,
-        systemPrompt: systemPrompt.trim()
+        systemPrompt: systemPrompt.trim(),
+        examplePrompts: examplePrompts
       });
       toast.success("Image generator added successfully!");
     }
@@ -63,6 +67,8 @@ export function ImageModelManager() {
     setDescription("");
     setSelectedModel("flux");
     setSystemPrompt("");
+    setExamplePrompts([]);
+    setCurrentExamplePrompt("");
   };
 
   const handleEdit = (model: any) => {
@@ -72,6 +78,8 @@ export function ImageModelManager() {
     setDescription(model.description || "");
     setSelectedModel(model.modelType || "flux");
     setSystemPrompt(model.systemPrompt || "");
+    setExamplePrompts(model.examplePrompts || []);
+    setCurrentExamplePrompt("");
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -82,6 +90,23 @@ export function ImageModelManager() {
     setDescription("");
     setSelectedModel("flux");
     setSystemPrompt("");
+    setExamplePrompts([]);
+    setCurrentExamplePrompt("");
+  };
+
+  const handleAddExamplePrompt = () => {
+    if (!currentExamplePrompt.trim()) {
+      toast.error("Please enter an example prompt");
+      return;
+    }
+    setExamplePrompts([...examplePrompts, currentExamplePrompt.trim()]);
+    setCurrentExamplePrompt("");
+    toast.success("Example prompt added!");
+  };
+
+  const handleRemoveExamplePrompt = (index: number) => {
+    setExamplePrompts(examplePrompts.filter((_, i) => i !== index));
+    toast.success("Example prompt removed");
   };
 
   return (
@@ -173,6 +198,44 @@ export function ImageModelManager() {
             />
           </div>
 
+          <div className="space-y-3">
+            <Label htmlFor="example-prompts" className="text-sm font-medium">Example Prompts</Label>
+            <div className="flex gap-2">
+              <Input
+                id="example-prompts"
+                placeholder="e.g., A beautiful sunset over mountains"
+                value={currentExamplePrompt}
+                onChange={(e) => setCurrentExamplePrompt(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddExamplePrompt()}
+                className="border-2 flex-1"
+              />
+              <Button type="button" onClick={handleAddExamplePrompt} variant="outline">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            {examplePrompts.length > 0 && (
+              <div className="space-y-2">
+                {examplePrompts.map((prompt, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg border">
+                    <span className="text-sm flex-1">{prompt}</span>
+                    <Button
+                      type="button"
+                      onClick={() => handleRemoveExamplePrompt(index)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                    >
+                      <Trash2 className="w-3 h-3 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Add example prompts that users can quickly try out with this generator.
+            </p>
+          </div>
+
           <div className="flex gap-2">
             {editingId && (
               <Button onClick={handleCancelEdit} variant="outline" className="flex-1" size="lg">
@@ -258,9 +321,17 @@ export function ImageModelManager() {
                     )}
                     
                     {model.systemPrompt && (
-                      <p className="text-xs text-muted-foreground/70 italic line-clamp-2">
+                      <p className="text-xs text-muted-foreground/70 italic line-clamp-2 mb-2">
                         "{model.systemPrompt}"
                       </p>
+                    )}
+
+                    {model.examplePrompts && model.examplePrompts.length > 0 && (
+                      <div className="mt-2 pt-2 border-t">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          Example prompts: {model.examplePrompts.length}
+                        </p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

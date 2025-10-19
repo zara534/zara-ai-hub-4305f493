@@ -17,6 +17,7 @@ export interface ImageModel {
   description?: string;
   modelType?: string;
   systemPrompt?: string;
+  examplePrompts?: string[];
 }
 
 export interface Announcement {
@@ -77,42 +78,52 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
   {
     id: "flux",
     name: "Flux",
+    emoji: "⚡",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "High quality image generation (Default)",
     modelType: "flux",
-    systemPrompt: "Generate high-quality, detailed images"
+    systemPrompt: "Generate high-quality, detailed images",
+    examplePrompts: ["A beautiful sunset over mountains", "A cute cat wearing sunglasses"]
   },
   {
     id: "stable-diffusion-xl",
     name: "Stable Diffusion XL",
+    emoji: "🎨",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "Stable Diffusion XL model for creative images",
     modelType: "stable-diffusion-xl",
-    systemPrompt: "Create artistic and creative images"
+    systemPrompt: "Create artistic and creative images",
+    examplePrompts: ["Abstract art with vibrant colors", "Fantasy landscape with dragons"]
   },
   {
     id: "dall-e-3",
     name: "DALL-E 3",
+    emoji: "🖼️",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "OpenAI's DALL-E 3 for photorealistic images",
     modelType: "dall-e-3",
-    systemPrompt: "Generate photorealistic and detailed images"
+    systemPrompt: "Generate photorealistic and detailed images",
+    examplePrompts: ["Photorealistic portrait of a person", "Modern architecture building"]
   },
   {
     id: "playground-v2.5",
     name: "Playground v2.5",
+    emoji: "🎪",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "Playground v2.5 for diverse styles",
     modelType: "playground-v2.5",
-    systemPrompt: "Create diverse artistic styles"
+    systemPrompt: "Create diverse artistic styles",
+    examplePrompts: ["Cartoon character design", "Sci-fi spaceship concept art"]
   },
   {
     id: "dpo",
     name: "DPO",
+    emoji: "🚀",
     apiEndpoint: "https://image.pollinations.ai/prompt",
     description: "DPO model for optimized generation",
     modelType: "dpo",
-    systemPrompt: "Generate optimized images efficiently"
+    systemPrompt: "Generate optimized images efficiently",
+    examplePrompts: ["Logo design for tech startup", "Minimalist poster design"]
   }
 ];
 

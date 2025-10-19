@@ -8,7 +8,6 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
-import { BroadcastViewer } from "@/components/BroadcastViewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
@@ -36,7 +35,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header currentView={currentView} onViewChange={setCurrentView} />
-      <BroadcastViewer />
       <main className="container mx-auto py-4 md:py-8 px-0 md:px-4">
         {currentView === "home" && (
           <Tabs defaultValue="text" className="w-full">
