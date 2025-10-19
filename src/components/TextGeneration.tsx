@@ -186,6 +186,11 @@ export function TextGeneration() {
 
   const selectedModelData = aiModels.find((m) => m.id === selectedModel);
 
+  // Clear messages when switching AI models
+  useEffect(() => {
+    setMessages([]);
+  }, [selectedModel]);
+
   return (
     <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
       <Card className="shadow-lg border-2">

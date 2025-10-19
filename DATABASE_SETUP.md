@@ -1,5 +1,154 @@
 # Database Setup Instructions
 
+## User Messaging System
+
+Run these SQL scripts in your Supabase SQL Editor to enable the secure messaging system between admin and users:
+
+### 1. Create User Roles Table
+
+```sql
+-- Create enum for roles
+create type public.app_role as enum ('admin', 'user');
+
+-- Create user_roles table
+create table public.user_roles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  role public.app_role not null default 'user',
+  created_at timestamptz default now(),
+  unique (user_id, role)
+);
+
+-- Enable RLS
+alter table public.user_roles enable row level security;
+
+-- Create security definer function to check roles
+create or replace function public.has_role(_user_id uuid, _role public.app_role)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.user_roles
+    where user_id = _user_id
+      and role = _role
+  )
+$$;
+
+-- RLS Policies
+create policy "Users can view their own roles"
+  on public.user_roles for select
+  using (auth.uid() = user_id);
+
+create policy "Admins can view all roles"
+  on public.user_roles for select
+  using (public.has_role(auth.uid(), 'admin'));
+
+create policy "Admins can insert roles"
+  on public.user_roles for insert
+  with check (public.has_role(auth.uid(), 'admin'));
+
+create policy "Admins can delete roles"
+  on public.user_roles for delete
+  using (public.has_role(auth.uid(), 'admin'));
+```
+
+### 2. Create User Messages Table
+
+```sql
+-- Create user_messages table
+create table public.user_messages (
+  id uuid primary key default gen_random_uuid(),
+  from_user_id uuid references auth.users(id) on delete cascade,
+  to_user_id uuid references auth.users(id) on delete cascade,
+  message text not null,
+  is_broadcast boolean default false,
+  created_at timestamptz default now(),
+  read_at timestamptz
+);
+
+-- Enable RLS
+alter table public.user_messages enable row level security;
+
+-- Create index for performance
+create index user_messages_to_user_id_idx on public.user_messages(to_user_id);
+create index user_messages_from_user_id_idx on public.user_messages(from_user_id);
+create index user_messages_created_at_idx on public.user_messages(created_at desc);
+
+-- RLS Policies
+-- Admins can view all messages
+create policy "Admins can view all messages"
+  on public.user_messages for select
+  using (public.has_role(auth.uid(), 'admin'));
+
+-- Users can view messages sent to them or broadcasts
+create policy "Users can view their messages"
+  on public.user_messages for select
+  using (
+    auth.uid() = to_user_id 
+    or is_broadcast = true
+    or auth.uid() = from_user_id
+  );
+
+-- Admins can send messages and broadcasts
+create policy "Admins can send messages"
+  on public.user_messages for insert
+  with check (public.has_role(auth.uid(), 'admin'));
+
+-- Users can send messages to admin only
+create policy "Users can message admin"
+  on public.user_messages for insert
+  with check (
+    auth.uid() = from_user_id 
+    and not is_broadcast
+    and exists (
+      select 1 from public.user_roles 
+      where user_id = to_user_id 
+      and role = 'admin'
+    )
+  );
+
+-- Users can mark their own messages as read
+create policy "Users can mark messages as read"
+  on public.user_messages for update
+  using (auth.uid() = to_user_id)
+  with check (auth.uid() = to_user_id);
+
+-- Admins can update any message
+create policy "Admins can update messages"
+  on public.user_messages for update
+  using (public.has_role(auth.uid(), 'admin'))
+  with check (public.has_role(auth.uid(), 'admin'));
+
+-- Admins can delete messages
+create policy "Admins can delete messages"
+  on public.user_messages for delete
+  using (public.has_role(auth.uid(), 'admin'));
+```
+
+### 3. Set Yourself as Admin
+
+Replace `YOUR_USER_ID` with your actual user ID from Supabase Auth:
+
+```sql
+insert into public.user_roles (user_id, role)
+values ('YOUR_USER_ID', 'admin');
+```
+
+### 4. Enable Real-time (Optional but Recommended)
+
+```sql
+-- Enable real-time for user_messages
+alter publication supabase_realtime add table public.user_messages;
+```
+
+---
+
+# Database Setup Instructions (Original)
+
 ## Quick Setup - Run All SQL at Once
 
 Go to your Supabase Dashboard → SQL Editor → New Query, then copy and paste ALL the SQL below and click "Run":
