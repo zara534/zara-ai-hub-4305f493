@@ -5,7 +5,6 @@ import { ImageGeneration } from "@/components/ImageGeneration";
 import { AdminPanel } from "@/components/AdminPanel";
 import { AdminLogin } from "@/components/AdminLogin";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { UserMessaging } from "@/components/UserMessaging";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -54,13 +53,6 @@ const Index = () => {
         {currentView === "settings" && <SettingsPanel />}
         {currentView === "admin" && (isAdmin ? <AdminPanel /> : <AdminLogin />)}
       </main>
-
-      {/* User Messaging - Fixed at bottom right */}
-      {currentView === "home" && (
-        <div className="fixed bottom-4 right-4 w-[380px] max-w-[calc(100vw-2rem)] z-50">
-          <UserMessaging />
-        </div>
-      )}
     </div>
   );
 };

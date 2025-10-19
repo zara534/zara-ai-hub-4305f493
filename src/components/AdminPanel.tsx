@@ -3,13 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, Edit2, Save, X, MessageSquare } from "lucide-react";
+import { Trash2, Plus, Edit2, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageModelManager } from "./ImageModelManager";
-import { AdminMessaging } from "./AdminMessaging";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminPanel() {
@@ -103,13 +102,9 @@ export function AdminPanel() {
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
         <Tabs defaultValue="text-models" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="text-models">Text AI</TabsTrigger>
             <TabsTrigger value="image-models">Image AI</TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
-              <span className="hidden md:inline">Messages</span>
-            </TabsTrigger>
           </TabsList>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
@@ -273,10 +268,6 @@ export function AdminPanel() {
 
         <TabsContent value="image-models" className="space-y-6 mt-6">
           <ImageModelManager />
-        </TabsContent>
-
-        <TabsContent value="messages" className="space-y-6 mt-6">
-          <AdminMessaging />
         </TabsContent>
       </Tabs>
     </div>
