@@ -9,12 +9,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+interface Reply {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}
+
 interface Announcement {
   id: string;
   title: string;
   content: string;
   created_at: string;
   created_by: string;
+  likes?: string[];
+  replies?: Reply[];
 }
 
 export function AdminMessaging() {
@@ -168,33 +177,57 @@ export function AdminMessaging() {
           ) : (
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {announcements.map((announcement) => (
-                  <div
-                    key={announcement.id}
-                    className="p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">
-                          {announcement.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {announcement.content}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(announcement.created_at).toLocaleString()}
-                        </p>
+                {announcements.map((announcement) => {
+                  const likes = announcement.likes || [];
+                  const replies = announcement.replies || [];
+                  
+                  return (
+                    <div
+                      key={announcement.id}
+                      className="p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg mb-1">
+                            {announcement.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {announcement.content}
+                          </p>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            {new Date(announcement.created_at).toLocaleString()}
+                          </p>
+
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                            <span>❤️ {likes.length} likes</span>
+                            <span>💬 {replies.length} replies</span>
+                          </div>
+
+                          {replies.length > 0 && (
+                            <div className="space-y-2 mt-3 pl-4 border-l-2 border-primary/20">
+                              <p className="text-xs font-semibold text-muted-foreground">User Replies:</p>
+                              {replies.map((reply) => (
+                                <div key={reply.id} className="bg-background/50 p-2 rounded text-sm">
+                                  <p className="text-muted-foreground">{reply.content}</p>
+                                  <p className="text-xs text-muted-foreground/50 mt-1">
+                                    {new Date(reply.created_at).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(announcement.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(announcement.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           )}
