@@ -22,47 +22,56 @@ export function UserMessaging() {
   useEffect(() => {
     loadAnnouncements();
     
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('user-announcements')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'announcements'
-        },
-        (payload) => {
-          setAnnouncements(prev => [payload.new as Announcement, ...prev]);
+    // Listen for storage changes (when announcements are added)
+    const handleStorageChange = () => {
+      const newAnnouncements = JSON.parse(localStorage.getItem("announcements") || "[]");
+      const lastRead = localStorage.getItem("last_announcement_read");
+      
+      if (lastRead && newAnnouncements.length > 0) {
+        const newestAnnouncement = newAnnouncements[0];
+        if (new Date(newestAnnouncement.created_at) > new Date(lastRead)) {
           setUnreadCount(prev => prev + 1);
           toast.info("New announcement from Admin!");
         }
-      )
-      .subscribe();
+      }
+      
+      setAnnouncements(newAnnouncements);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Poll every 3 seconds for updates
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem("announcements");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (JSON.stringify(parsed) !== JSON.stringify(announcements)) {
+          handleStorageChange();
+        }
+      }
+    }, 3000);
 
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
     };
-  }, []);
+  }, [announcements]);
 
   const loadAnnouncements = async () => {
     try {
-      const { data, error } = await supabase
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setAnnouncements(data || []);
-      
-      // Check localStorage for last read timestamp
-      const lastRead = localStorage.getItem("last_announcement_read");
-      if (lastRead && data) {
-        const unread = data.filter(a => new Date(a.created_at) > new Date(lastRead));
-        setUnreadCount(unread.length);
-      } else if (data) {
-        setUnreadCount(data.length);
+      const stored = localStorage.getItem("announcements");
+      if (stored) {
+        const data = JSON.parse(stored);
+        setAnnouncements(data);
+        
+        // Check localStorage for last read timestamp
+        const lastRead = localStorage.getItem("last_announcement_read");
+        if (lastRead && data) {
+          const unread = data.filter((a: Announcement) => new Date(a.created_at) > new Date(lastRead));
+          setUnreadCount(unread.length);
+        } else if (data) {
+          setUnreadCount(data.length);
+        }
       }
     } catch (error: any) {
       console.error("Error loading announcements:", error);

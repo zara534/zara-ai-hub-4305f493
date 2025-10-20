@@ -28,39 +28,25 @@ export function AdminMessaging() {
   useEffect(() => {
     loadAnnouncements();
     
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('announcements-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'announcements'
-        },
-        () => {
-          loadAnnouncements();
-        }
-      )
-      .subscribe();
+    // Listen for storage changes (when announcements are added)
+    const handleStorageChange = () => {
+      loadAnnouncements();
+    };
 
+    window.addEventListener("storage", handleStorageChange);
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
   const loadAnnouncements = async () => {
     try {
-      const { data, error } = await supabase
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setAnnouncements(data || []);
+      const stored = localStorage.getItem("announcements");
+      if (stored) {
+        setAnnouncements(JSON.parse(stored));
+      }
     } catch (error: any) {
       console.error("Error loading announcements:", error);
-      toast.error("Failed to load announcements");
     } finally {
       setLoadingAnnouncements(false);
     }
@@ -79,19 +65,27 @@ export function AdminMessaging() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("announcements")
-        .insert({
-          title: title.trim(),
-          content: content.trim(),
-          created_by: user.id,
-        });
+      // Create announcement in localStorage for immediate broadcast
+      const announcement = {
+        id: crypto.randomUUID(),
+        title: title.trim(),
+        content: content.trim(),
+        created_by: user.id,
+        created_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
+      // Get existing announcements from localStorage
+      const existingAnnouncements = JSON.parse(localStorage.getItem("announcements") || "[]");
+      existingAnnouncements.unshift(announcement);
+      localStorage.setItem("announcements", JSON.stringify(existingAnnouncements));
+
+      // Trigger storage event for other tabs/windows
+      window.dispatchEvent(new Event("storage"));
 
       toast.success("Announcement sent to all users!");
       setTitle("");
       setContent("");
+      loadAnnouncements();
     } catch (error: any) {
       console.error("Error sending announcement:", error);
       toast.error("Failed to send announcement");
@@ -102,12 +96,11 @@ export function AdminMessaging() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("announcements")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
+      const announcements = JSON.parse(localStorage.getItem("announcements") || "[]");
+      const filtered = announcements.filter((a: any) => a.id !== id);
+      localStorage.setItem("announcements", JSON.stringify(filtered));
+      window.dispatchEvent(new Event("storage"));
+      loadAnnouncements();
       toast.success("Announcement deleted");
     } catch (error: any) {
       console.error("Error deleting announcement:", error);
