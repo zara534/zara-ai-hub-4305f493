@@ -12,23 +12,12 @@ interface Announcement {
   title: string;
   content: string;
   created_at: string;
-  likes?: string[];
-  replies?: Reply[];
-}
-
-interface Reply {
-  id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
 }
 
 export function UserMessaging() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
-  const [userId] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     loadAnnouncements();
@@ -95,167 +84,73 @@ export function UserMessaging() {
     localStorage.setItem("last_announcement_read", new Date().toISOString());
   };
 
-  const handleLike = (announcementId: string) => {
-    const stored = localStorage.getItem("announcements");
-    if (stored) {
-      const data: Announcement[] = JSON.parse(stored);
-      const updated = data.map(a => {
-        if (a.id === announcementId) {
-          const likes = a.likes || [];
-          const hasLiked = likes.includes(userId);
-          return {
-            ...a,
-            likes: hasLiked ? likes.filter(id => id !== userId) : [...likes, userId]
-          };
-        }
-        return a;
-      });
-      localStorage.setItem("announcements", JSON.stringify(updated));
-      window.dispatchEvent(new Event("storage"));
-      setAnnouncements(updated);
-      toast.success(updated.find(a => a.id === announcementId)?.likes?.includes(userId) ? "Liked!" : "Unliked");
-    }
-  };
-
-  const handleReply = (announcementId: string) => {
-    const text = replyText[announcementId]?.trim();
-    if (!text) {
-      toast.error("Please enter a reply");
-      return;
-    }
-
-    const stored = localStorage.getItem("announcements");
-    if (stored) {
-      const data: Announcement[] = JSON.parse(stored);
-      const updated = data.map(a => {
-        if (a.id === announcementId) {
-          const replies = a.replies || [];
-          return {
-            ...a,
-            replies: [...replies, {
-              id: crypto.randomUUID(),
-              user_id: userId,
-              content: text,
-              created_at: new Date().toISOString()
-            }]
-          };
-        }
-        return a;
-      });
-      localStorage.setItem("announcements", JSON.stringify(updated));
-      window.dispatchEvent(new Event("storage"));
-      setAnnouncements(updated);
-      setReplyText({ ...replyText, [announcementId]: "" });
-      toast.success("Reply sent to admin!");
-    }
-  };
-
   return (
-    <Card className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl shadow-2xl z-50 border-2">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Bell className="w-5 h-5" />
-            Announcements
-            {unreadCount > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {unreadCount} new
-              </Badge>
-            )}
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(!isOpen)}
+    <>
+      {/* Floating Button */}
+      <Button
+        onClick={handleOpen}
+        size="icon"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+      >
+        <Bell className="w-6 h-6" />
+        {unreadCount > 0 && (
+          <Badge
+            variant="destructive"
+            className="absolute -top-1 -right-1 h-6 w-6 rounded-full p-0 flex items-center justify-center"
           >
-            {isOpen ? <X className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-          </Button>
-        </div>
-      </CardHeader>
-      
+            {unreadCount}
+          </Badge>
+        )}
+      </Button>
+
+      {/* Messages Panel */}
       {isOpen && (
-        <CardContent>
-          {announcements.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8 text-sm">
-              No announcements yet
-            </p>
-          ) : (
-            <ScrollArea className="h-[500px] pr-3">
-              <div className="space-y-4">
-                {announcements.map((announcement) => {
-                  const likes = announcement.likes || [];
-                  const hasLiked = likes.includes(userId);
-                  const replies = announcement.replies || [];
-                  
-                  return (
+        <Card className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] shadow-2xl z-50 border-2">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bell className="w-5 h-5" />
+                Announcements
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {announcements.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">
+                No announcements yet
+              </p>
+            ) : (
+              <ScrollArea className="h-[400px] pr-3">
+                <div className="space-y-3">
+                  {announcements.map((announcement) => (
                     <div
                       key={announcement.id}
-                      className="p-4 border rounded-lg bg-muted/30 space-y-3"
+                      className="p-3 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      <div>
-                        <h3 className="font-semibold text-base mb-1">
-                          {announcement.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {announcement.content}
-                        </p>
-                        <p className="text-xs text-muted-foreground/70">
-                          {new Date(announcement.created_at).toLocaleString()}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant={hasLiked ? "default" : "outline"}
-                          onClick={() => handleLike(announcement.id)}
-                          className="text-xs"
-                        >
-                          ❤️ {likes.length > 0 && likes.length}
-                        </Button>
-                      </div>
-
-                      {replies.length > 0 && (
-                        <div className="space-y-2 pl-4 border-l-2">
-                          {replies.map((reply) => (
-                            <div key={reply.id} className="text-xs bg-background/50 p-2 rounded">
-                              <p className="text-muted-foreground">{reply.content}</p>
-                              <p className="text-xs text-muted-foreground/50 mt-1">
-                                {new Date(reply.created_at).toLocaleString()}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Reply to admin..."
-                          value={replyText[announcement.id] || ""}
-                          onChange={(e) => setReplyText({ ...replyText, [announcement.id]: e.target.value })}
-                          className="flex-1 text-sm px-3 py-1.5 border rounded-md bg-background"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleReply(announcement.id);
-                            }
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleReply(announcement.id)}
-                        >
-                          Reply
-                        </Button>
-                      </div>
+                      <h3 className="font-semibold text-sm mb-1">
+                        {announcement.title}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {announcement.content}
+                      </p>
+                      <p className="text-xs text-muted-foreground/70">
+                        {new Date(announcement.created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          )}
-        </CardContent>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
       )}
-    </Card>
+    </>
   );
 }
