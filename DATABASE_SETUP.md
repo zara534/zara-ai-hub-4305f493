@@ -54,43 +54,57 @@ CREATE POLICY "Admins can view all roles"
   USING (public.has_role(auth.uid(), 'admin'));
 
 -- ============================================
--- STEP 2: Create Global Limits Table
+-- STEP 2: Create Profiles Table
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS public.global_limits (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  text_generation_limit integer,
-  image_generation_limit integer,
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  username text,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Enable RLS
-ALTER TABLE public.global_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for global_limits
-CREATE POLICY "Allow authenticated users to read limits"
-  ON public.global_limits
+-- RLS Policies for profiles
+CREATE POLICY "Users can view all profiles"
+  ON public.profiles
   FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Allow admins to insert limits"
-  ON public.global_limits
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Allow admins to update limits"
-  ON public.global_limits
+CREATE POLICY "Users can update their own profile"
+  ON public.profiles
   FOR UPDATE
   TO authenticated
-  USING (public.has_role(auth.uid(), 'admin'));
+  USING (auth.uid() = id);
 
--- Insert default record (unlimited)
-INSERT INTO public.global_limits (text_generation_limit, image_generation_limit)
-VALUES (null, null)
-ON CONFLICT DO NOTHING;
+CREATE POLICY "Users can insert their own profile"
+  ON public.profiles
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
+
+-- Create function to handle new user
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username)
+  VALUES (new.id, new.raw_user_meta_data->>'username');
+  RETURN new;
+END;
+$$;
+
+-- Create trigger for new users
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================
 -- STEP 3: Create Announcements Table
@@ -100,10 +114,7 @@ CREATE TABLE IF NOT EXISTS public.announcements (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   title text NOT NULL,
   content text NOT NULL,
-  ai_model_name text DEFAULT 'Admin',
   created_by uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  likes integer DEFAULT 0,
-  dislikes integer DEFAULT 0,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -111,7 +122,7 @@ CREATE TABLE IF NOT EXISTS public.announcements (
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for announcements
-CREATE POLICY "Allow all users to read announcements"
+CREATE POLICY "Allow all authenticated users to read announcements"
   ON public.announcements
   FOR SELECT
   TO authenticated
@@ -122,12 +133,6 @@ CREATE POLICY "Allow admins to create announcements"
   FOR INSERT
   TO authenticated
   WITH CHECK (public.has_role(auth.uid(), 'admin'));
-
-CREATE POLICY "Allow admins to update announcements"
-  ON public.announcements
-  FOR UPDATE
-  TO authenticated
-  USING (public.has_role(auth.uid(), 'admin'));
 
 CREATE POLICY "Allow admins to delete announcements"
   ON public.announcements
@@ -140,40 +145,6 @@ CREATE INDEX IF NOT EXISTS announcements_created_at_idx ON public.announcements(
 
 -- Enable realtime for announcements
 ALTER TABLE public.announcements REPLICA IDENTITY FULL;
-
--- ============================================
--- STEP 4: Create Announcement Reactions Table
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.announcement_reactions (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  announcement_id uuid REFERENCES public.announcements(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  reaction text NOT NULL CHECK (reaction IN ('like', 'dislike')),
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-  UNIQUE (announcement_id, user_id)
-);
-
--- Enable RLS
-ALTER TABLE public.announcement_reactions ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for announcement_reactions
-CREATE POLICY "Allow all users to read reactions"
-  ON public.announcement_reactions
-  FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Allow users to manage their own reactions"
-  ON public.announcement_reactions
-  FOR ALL
-  TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-
--- Create indexes for faster queries
-CREATE INDEX IF NOT EXISTS announcement_reactions_announcement_id_idx ON public.announcement_reactions(announcement_id);
-CREATE INDEX IF NOT EXISTS announcement_reactions_user_id_idx ON public.announcement_reactions(user_id);
 ```
 
 ## After Running the SQL
@@ -194,10 +165,10 @@ CREATE INDEX IF NOT EXISTS announcement_reactions_user_id_idx ON public.announce
 ## What This Sets Up
 
 ✅ **User Roles** - Admin permissions with secure RLS  
-✅ **Usage Limits** - Control daily text/image generation  
-✅ **Announcements** - Broadcast messages to all users  
-✅ **Reactions** - Like/dislike announcements  
-✅ **Real-time Updates** - Announcements update live
+✅ **User Profiles** - Username storage and management  
+✅ **Announcements** - Admin broadcasts to all users  
+✅ **Real-time Updates** - Announcements update live  
+✅ **AI Name Recognition** - AI knows user's username
 
 ## Troubleshooting
 
