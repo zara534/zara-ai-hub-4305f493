@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Download, Image as ImageIcon, Copy, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
+import { AIModelRatings } from "./AIModelRatings";
 
 interface ImageModel {
   id: string;
@@ -191,10 +192,15 @@ export function ImageGeneration() {
     <div className="space-y-4 max-w-5xl mx-auto">
       <Card className="shadow-lg border-2">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <ImageIcon className="w-6 h-6" />
-            AI Image Generator
+          <CardTitle className="flex items-center justify-between text-2xl">
+            <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+              ZARA AI HUB
+            </span>
+            <AIModelRatings modelId={selectedModel} modelType="image" />
           </CardTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            {selectedModelData?.description || "Generate stunning images with AI"}
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -257,12 +263,12 @@ export function ImageGeneration() {
               disabled={isLoading}
             />
             {isLoading ? (
-              <Button onClick={handleCancel} size="lg" variant="destructive">
+              <Button onClick={handleCancel} size="lg" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                 <X className="w-5 h-5" />
               </Button>
             ) : (
               <Button onClick={handleGenerate} size="lg">
-                <ImageIcon className="w-5 h-5" />
+                <span className="text-xl font-bold">Z</span>
               </Button>
             )}
           </div>

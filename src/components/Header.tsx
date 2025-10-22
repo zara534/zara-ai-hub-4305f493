@@ -1,4 +1,4 @@
-import { Settings, Home, Lock, Menu, LogOut } from "lucide-react";
+import { Settings, Home, Lock, Menu, LogOut, Bell } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
@@ -6,13 +6,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { ProfileManager } from "./ProfileManager";
+import { UserMessaging } from "./UserMessaging";
 
 interface HeaderProps {
   currentView: "home" | "admin" | "settings";
   onViewChange: (view: "home" | "admin" | "settings") => void;
+  showMessaging?: boolean;
 }
 
-export function Header({ currentView, onViewChange }: HeaderProps) {
+export function Header({ currentView, onViewChange, showMessaging = true }: HeaderProps) {
   const { logout } = useAuth();
   const { isAdmin } = useApp();
   const navigate = useNavigate();
@@ -71,9 +74,12 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                   <Settings className="w-5 h-5 mr-3" />
                   Settings
                 </Button>
+                <div className="px-2">
+                  <ProfileManager />
+                </div>
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-lg h-12 text-red-500 hover:text-red-600"
+                  className="w-full justify-start text-lg h-12 text-destructive hover:text-destructive/90"
                   onClick={handleLogout}
                 >
                   <LogOut className="w-5 h-5 mr-3" />
@@ -97,6 +103,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
+            {showMessaging && <UserMessaging />}
             <Button
               variant={currentView === "home" ? "default" : "ghost"}
               size="sm"
@@ -121,10 +128,11 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </Button>
+            <ProfileManager />
             <Button
               variant="ghost"
               size="sm"
-              className="text-red-500 hover:text-red-600"
+              className="text-destructive hover:text-destructive/90"
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -132,15 +140,17 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
             </Button>
           </div>
 
-          {/* Mobile Settings Quick Access */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => onViewChange("settings")}
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
+          {/* Mobile Quick Access */}
+          <div className="md:hidden flex items-center gap-2">
+            {showMessaging && <UserMessaging />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onViewChange("settings")}
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </header>

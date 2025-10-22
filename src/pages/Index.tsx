@@ -5,7 +5,6 @@ import { ImageGeneration } from "@/components/ImageGeneration";
 import { AdminPanel } from "@/components/AdminPanel";
 import { AdminLogin } from "@/components/AdminLogin";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { UserMessaging } from "@/components/UserMessaging";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -35,7 +34,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header currentView={currentView} onViewChange={setCurrentView} />
+      <Header currentView={currentView} onViewChange={setCurrentView} showMessaging={currentView === "home"} />
       <main className="container mx-auto py-4 md:py-8 px-0 md:px-4">
         {currentView === "home" && (
           <Tabs defaultValue="text" className="w-full">
@@ -54,7 +53,6 @@ const Index = () => {
         {currentView === "settings" && <SettingsPanel />}
         {currentView === "admin" && (isAdmin ? <AdminPanel /> : <AdminLogin />)}
       </main>
-      {currentView === "home" && <UserMessaging />}
     </div>
   );
 };

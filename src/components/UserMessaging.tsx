@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Bell, X } from "lucide-react";
+import { Bell, X, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Announcement {
@@ -12,15 +11,18 @@ interface Announcement {
   title: string;
   content: string;
   created_at: string;
+  likes?: number;
 }
 
 export function UserMessaging() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [likedAnnouncements, setLikedAnnouncements] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadAnnouncements();
+    loadLikedAnnouncements();
     
     // Listen for storage changes (when announcements are added)
     const handleStorageChange = () => {
@@ -78,6 +80,33 @@ export function UserMessaging() {
     }
   };
 
+  const loadLikedAnnouncements = () => {
+    const liked = JSON.parse(localStorage.getItem("liked_announcements") || "[]");
+    setLikedAnnouncements(new Set(liked));
+  };
+
+  const handleLike = (announcementId: string) => {
+    const newLiked = new Set(likedAnnouncements);
+    if (newLiked.has(announcementId)) {
+      newLiked.delete(announcementId);
+    } else {
+      newLiked.add(announcementId);
+    }
+    setLikedAnnouncements(newLiked);
+    localStorage.setItem("liked_announcements", JSON.stringify(Array.from(newLiked)));
+
+    // Update the announcement likes count
+    const updatedAnnouncements = announcements.map(ann => {
+      if (ann.id === announcementId) {
+        const currentLikes = ann.likes || 0;
+        return { ...ann, likes: newLiked.has(announcementId) ? currentLikes + 1 : Math.max(0, currentLikes - 1) };
+      }
+      return ann;
+    });
+    localStorage.setItem("announcements", JSON.stringify(updatedAnnouncements));
+    setAnnouncements(updatedAnnouncements);
+  };
+
   const handleOpen = () => {
     setIsOpen(true);
     setUnreadCount(0);
@@ -86,17 +115,19 @@ export function UserMessaging() {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Header Button */}
       <Button
         onClick={handleOpen}
-        size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+        variant="ghost"
+        size="sm"
+        className="relative"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="w-4 h-4 mr-2" />
+        Announcements
         {unreadCount > 0 && (
           <Badge
             variant="destructive"
-            className="absolute -top-1 -right-1 h-6 w-6 rounded-full p-0 flex items-center justify-center"
+            className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
           >
             {unreadCount}
           </Badge>
@@ -105,7 +136,7 @@ export function UserMessaging() {
 
       {/* Messages Panel */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] shadow-2xl z-50 border-2">
+        <Card className="fixed top-20 right-6 w-96 max-w-[calc(100vw-3rem)] shadow-2xl z-50 border-2">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -140,9 +171,22 @@ export function UserMessaging() {
                       <p className="text-xs text-muted-foreground mb-2">
                         {announcement.content}
                       </p>
-                      <p className="text-xs text-muted-foreground/70">
-                        {new Date(announcement.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground/70">
+                          {new Date(announcement.created_at).toLocaleDateString()}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => handleLike(announcement.id)}
+                        >
+                          <Heart 
+                            className={`w-4 h-4 mr-1 ${likedAnnouncements.has(announcement.id) ? 'fill-red-500 text-red-500' : ''}`} 
+                          />
+                          <span className="text-xs">{announcement.likes || 0}</span>
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

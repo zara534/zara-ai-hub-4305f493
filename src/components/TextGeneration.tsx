@@ -3,14 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Loader2, Send, Download, Copy, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { AIModelRatings } from "./AIModelRatings";
 
 interface Message {
   id: string;
@@ -213,6 +212,7 @@ export function TextGeneration() {
                 </p>
               )}
               <div className="flex items-center gap-2 flex-shrink-0">
+                <AIModelRatings modelId={selectedModel} modelType="text" />
                 {messages.length > 0 && (
                   <Button
                     variant="outline"
@@ -291,7 +291,9 @@ export function TextGeneration() {
                   </div>
                   {message.role === "user" && (
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
-                      <span className="text-base md:text-lg font-bold text-primary-foreground">U</span>
+                      <span className="text-base md:text-lg font-bold text-primary-foreground">
+                        {username ? username.charAt(0).toUpperCase() : "U"}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -319,8 +321,7 @@ export function TextGeneration() {
               <Button
                 onClick={handleStopGeneration}
                 size="icon"
-                variant="destructive"
-                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0"
+                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shadow-md flex-shrink-0 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >
                 <X className="w-4 h-4 md:w-5 md:h-5" />
               </Button>
