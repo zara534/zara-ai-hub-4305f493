@@ -92,7 +92,7 @@ export function TextGeneration() {
           role: m.role,
           content: m.content
         })),
-        { role: "user", content: prompt }
+        { role: "user", content: userMessage.content }
       ];
       
       const response = await fetch(
