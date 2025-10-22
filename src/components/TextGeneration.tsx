@@ -83,30 +83,40 @@ export function TextGeneration() {
 
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
-      const usernameContext = username ? `Remember: The user's name is ${username}. Address them by name when appropriate. ` : "";
+      const usernameContext = username ? `The user's name is ${username}. Address them by name when appropriate.` : "";
       
-      // Limit conversation history to prevent message overflow
-      const conversationHistory = messages.length > 0 
-        ? messages.slice(-3).map(m => {
-            const truncatedContent = m.content.length > 500 ? m.content.substring(0, 500) + "..." : m.content;
-            return `${m.role}: ${truncatedContent}`;
-          }).join("\n") + "\n" 
-        : "";
-      
-      // Truncate prompt if too long
-      const truncatedPrompt = prompt.length > 1000 ? prompt.substring(0, 1000) + "..." : prompt;
-      const enhancedPrompt = `${systemPrompt}. ${usernameContext}\n\nConversation:\n${conversationHistory}user: ${truncatedPrompt}`;
+      // Build conversation messages for POST request
+      const conversationMessages = [
+        { role: "system", content: `${systemPrompt}. ${usernameContext}` },
+        ...messages.slice(-5).map(m => ({
+          role: m.role,
+          content: m.content
+        })),
+        { role: "user", content: prompt }
+      ];
       
       const response = await fetch(
-        `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=openai`,
-        { signal: abortControllerRef.current.signal }
+        "https://text.pollinations.ai/openai",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: conversationMessages,
+            model: "openai",
+            stream: false
+          }),
+          signal: abortControllerRef.current.signal
+        }
       );
 
       if (!response.ok) {
         throw new Error("Failed to generate text");
       }
 
-      const fullText = await response.text();
+      const data = await response.json();
+      const fullText = data.choices?.[0]?.message?.content || "";
       
       const assistantMessage: Message = {
         id: assistantId,
