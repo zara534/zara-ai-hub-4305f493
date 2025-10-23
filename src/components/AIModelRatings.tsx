@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AIModelRatingsProps {
   modelId: string;
@@ -9,33 +10,55 @@ interface AIModelRatingsProps {
 }
 
 export function AIModelRatings({ modelId, modelType }: AIModelRatingsProps) {
+  const { user } = useAuth();
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const storageKey = `${modelType}_model_${modelId}_likes`;
-  const userLikeKey = `${modelType}_model_${modelId}_user_liked`;
+  const userLikesKey = `${modelType}_model_likes_by_user`;
 
   useEffect(() => {
-    const storedLikes = parseInt(localStorage.getItem(storageKey) || "0");
-    const userLiked = localStorage.getItem(userLikeKey) === "true";
-    setLikes(storedLikes);
-    setHasLiked(userLiked);
-  }, [storageKey, userLikeKey]);
+    loadLikes();
+  }, [modelId, modelType, user]);
+
+  const loadLikes = () => {
+    const allLikes = JSON.parse(localStorage.getItem(userLikesKey) || "{}");
+    const modelLikes = allLikes[modelId] || { total: 0, users: [] };
+    setLikes(modelLikes.total);
+    
+    if (user) {
+      setHasLiked(modelLikes.users.includes(user.id));
+    }
+  };
 
   const handleLike = () => {
-    let newLikes = likes;
-    let newHasLiked = !hasLiked;
-
-    if (newHasLiked) {
-      newLikes = likes + 1;
-      toast.success("Thanks for your feedback!");
-    } else {
-      newLikes = Math.max(0, likes - 1);
+    if (!user) {
+      toast.error("Please log in to like models");
+      return;
     }
 
-    setLikes(newLikes);
+    const allLikes = JSON.parse(localStorage.getItem(userLikesKey) || "{}");
+    const modelLikes = allLikes[modelId] || { total: 0, users: [] };
+    
+    const newHasLiked = !hasLiked;
+    let newTotal = modelLikes.total;
+    let newUsers = [...modelLikes.users];
+
+    if (newHasLiked) {
+      if (!newUsers.includes(user.id)) {
+        newUsers.push(user.id);
+        newTotal++;
+        toast.success("Thanks for your feedback!");
+      }
+    } else {
+      newUsers = newUsers.filter(id => id !== user.id);
+      newTotal = Math.max(0, newTotal - 1);
+    }
+
+    allLikes[modelId] = { total: newTotal, users: newUsers };
+    localStorage.setItem(userLikesKey, JSON.stringify(allLikes));
+    
+    setLikes(newTotal);
     setHasLiked(newHasLiked);
-    localStorage.setItem(storageKey, newLikes.toString());
-    localStorage.setItem(userLikeKey, newHasLiked.toString());
   };
 
   return (
@@ -43,10 +66,10 @@ export function AIModelRatings({ modelId, modelType }: AIModelRatingsProps) {
       variant="ghost"
       size="sm"
       onClick={handleLike}
-      className="gap-1"
+      className="gap-1 group"
     >
       <Heart 
-        className={`w-4 h-4 ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} 
+        className={`w-4 h-4 transition-all ${hasLiked ? 'fill-primary text-primary' : 'group-hover:text-primary'}`} 
       />
       <span className="text-sm">{likes}</span>
     </Button>

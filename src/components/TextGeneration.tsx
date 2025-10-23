@@ -199,8 +199,12 @@ export function TextGeneration() {
     <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
-          <div className="flex items-start md:items-center gap-2 md:gap-3 flex-col md:flex-row">
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <Select value={selectedModel} onValueChange={(value) => {
+              setSelectedModel(value);
+              const model = aiModels.find(m => m.id === value);
+              toast.success(`Switched to ${model?.name || 'AI Model'}`);
+            }}>
               <SelectTrigger className="w-full md:w-[280px]">
                 <SelectValue placeholder="Choose AI Agent" />
               </SelectTrigger>
@@ -215,26 +219,18 @@ export function TextGeneration() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto">
-              {selectedModelData && (
-                <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 flex-1">
-                  {selectedModelData.description || selectedModelData.behavior}
-                </p>
+            <div className="flex items-center gap-2">
+              <AIModelRatings modelId={selectedModel} modelType="text" />
+              {messages.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Download</span>
+                </Button>
               )}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <AIModelRatings modelId={selectedModel} modelType="text" />
-                {messages.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownload}
-                    className="flex-shrink-0"
-                  >
-                    <Download className="w-4 h-4 md:mr-2" />
-                    <span className="hidden md:inline">Download</span>
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
         </CardContent>
@@ -300,11 +296,27 @@ export function TextGeneration() {
                     )}
                   </div>
                   {message.role === "user" && (
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
-                      <span className="text-base md:text-lg font-bold text-primary-foreground">
-                        {username ? username.charAt(0).toUpperCase() : "U"}
-                      </span>
-                    </div>
+                    <>
+                      <div className="flex flex-col items-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopy(message.content, message.id)}
+                          className="h-6 px-2"
+                        >
+                          {copiedId === message.id ? (
+                            <Check className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
+                        <span className="text-base md:text-lg font-bold text-primary-foreground">
+                          {username ? username.charAt(0).toUpperCase() : "U"}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               ))

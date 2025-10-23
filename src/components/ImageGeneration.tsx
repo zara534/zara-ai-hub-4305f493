@@ -78,6 +78,7 @@ export function ImageGeneration() {
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState("flux");
   const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [currentModelName, setCurrentModelName] = useState("Flux");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
@@ -204,7 +205,12 @@ export function ImageGeneration() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <Select value={selectedModel} onValueChange={(value) => {
+              const model = imageModels.find(m => m.id === value);
+              setSelectedModel(value);
+              setCurrentModelName(model?.name || "");
+              toast.success(`Switched to ${model?.name || 'Image Generator'}`);
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select model" />
               </SelectTrigger>

@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Bell, X, Heart } from "lucide-react";
+import { Bell, X, Heart, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AnnouncementComments } from "./AnnouncementComments";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Announcement {
   id: string;
@@ -15,10 +17,12 @@ interface Announcement {
 }
 
 export function UserMessaging() {
+  const { user } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [likedAnnouncements, setLikedAnnouncements] = useState<Set<string>>(new Set());
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadAnnouncements();
@@ -86,25 +90,52 @@ export function UserMessaging() {
   };
 
   const handleLike = (announcementId: string) => {
-    const newLiked = new Set(likedAnnouncements);
-    if (newLiked.has(announcementId)) {
-      newLiked.delete(announcementId);
-    } else {
-      newLiked.add(announcementId);
+    if (!user) {
+      toast.error("Please log in to like announcements");
+      return;
     }
-    setLikedAnnouncements(newLiked);
-    localStorage.setItem("liked_announcements", JSON.stringify(Array.from(newLiked)));
 
-    // Update the announcement likes count
-    const updatedAnnouncements = announcements.map(ann => {
-      if (ann.id === announcementId) {
-        const currentLikes = ann.likes || 0;
-        return { ...ann, likes: newLiked.has(announcementId) ? currentLikes + 1 : Math.max(0, currentLikes - 1) };
+    const likesKey = "announcement_likes_by_user";
+    const allLikes = JSON.parse(localStorage.getItem(likesKey) || "{}");
+    const announcementLikes = allLikes[announcementId] || { total: 0, users: [] };
+    
+    const newLiked = new Set(likedAnnouncements);
+    const hasLiked = newLiked.has(announcementId);
+    
+    let newTotal = announcementLikes.total;
+    let newUsers = [...announcementLikes.users];
+
+    if (!hasLiked) {
+      if (!newUsers.includes(user.id)) {
+        newUsers.push(user.id);
+        newTotal++;
+        newLiked.add(announcementId);
       }
-      return ann;
-    });
-    localStorage.setItem("announcements", JSON.stringify(updatedAnnouncements));
+    } else {
+      newUsers = newUsers.filter(id => id !== user.id);
+      newTotal = Math.max(0, newTotal - 1);
+      newLiked.delete(announcementId);
+    }
+
+    allLikes[announcementId] = { total: newTotal, users: newUsers };
+    localStorage.setItem(likesKey, JSON.stringify(allLikes));
+    setLikedAnnouncements(newLiked);
+
+    // Update announcement display
+    const updatedAnnouncements = announcements.map(ann => 
+      ann.id === announcementId ? { ...ann, likes: newTotal } : ann
+    );
     setAnnouncements(updatedAnnouncements);
+  };
+
+  const toggleComments = (announcementId: string) => {
+    const newExpanded = new Set(expandedComments);
+    if (newExpanded.has(announcementId)) {
+      newExpanded.delete(announcementId);
+    } else {
+      newExpanded.add(announcementId);
+    }
+    setExpandedComments(newExpanded);
   };
 
   const handleOpen = () => {
@@ -175,18 +206,35 @@ export function UserMessaging() {
                         <p className="text-xs text-muted-foreground/70">
                           {new Date(announcement.created_at).toLocaleDateString()}
                         </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2"
-                          onClick={() => handleLike(announcement.id)}
-                        >
-                          <Heart 
-                            className={`w-4 h-4 mr-1 ${likedAnnouncements.has(announcement.id) ? 'fill-red-500 text-red-500' : ''}`} 
-                          />
-                          <span className="text-xs">{announcement.likes || 0}</span>
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={() => handleLike(announcement.id)}
+                          >
+                            <Heart 
+                              className={`w-4 h-4 mr-1 transition-all ${
+                                likedAnnouncements.has(announcement.id) 
+                                  ? 'fill-primary text-primary' 
+                                  : 'hover:text-primary'
+                              }`} 
+                            />
+                            <span className="text-xs">{announcement.likes || 0}</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={() => toggleComments(announcement.id)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
+                      {expandedComments.has(announcement.id) && (
+                        <AnnouncementComments announcementId={announcement.id} />
+                      )}
                     </div>
                   ))}
                 </div>

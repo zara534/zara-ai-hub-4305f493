@@ -1,20 +1,15 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Sparkles, Zap, Shield, Heart, Palette, Type, Moon } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sparkles, Zap, Shield, MessageCircle, Mail, Phone, Image as ImageIcon, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useApp } from "@/contexts/AppContext";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import heroImage from "@/assets/hero-ai.jpg";
 import featureBg from "@/assets/feature-bg.jpg";
 
 export function Landing() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { settings, updateSettings } = useApp();
 
   useEffect(() => {
     if (user) {
@@ -45,8 +40,7 @@ export function Landing() {
               </h1>
               
               <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
-                Experience the future of AI conversations, created by Zara Goodluck - 
-                a young innovator with a dream to make AI accessible to everyone
+                Your all-in-one AI platform for intelligent text generation and stunning image creation
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -60,111 +54,72 @@ export function Landing() {
             </div>
           </div>
 
-          {/* Customization Panel */}
-          <Card className="border-2 shadow-xl">
+          {/* About Section */}
+          <Card className="border-2 shadow-xl bg-card/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="w-5 h-5" />
-                Customize Your Experience
+              <CardTitle className="text-3xl text-center">
+                What is ZARA AI HUB?
               </CardTitle>
-              <CardDescription>
-                Try different themes and fonts before signing up!
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Type className="w-4 h-4" />
-                  Font Family
-                </Label>
-                <Select
-                  value={settings.fontFamily}
-                  onValueChange={(value) => updateSettings({ fontFamily: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inter">Inter</SelectItem>
-                    <SelectItem value="roboto">Roboto</SelectItem>
-                    <SelectItem value="poppins">Poppins</SelectItem>
-                    <SelectItem value="playfair">Playfair Display</SelectItem>
-                    <SelectItem value="mono">JetBrains Mono</SelectItem>
-                    <SelectItem value="lato">Lato</SelectItem>
-                    <SelectItem value="opensans">Open Sans</SelectItem>
-                    <SelectItem value="raleway">Raleway</SelectItem>
-                    <SelectItem value="montserrat">Montserrat</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Palette className="w-4 h-4" />
-                  Color Theme
-                </Label>
-                <Select
-                  value={settings.colorTheme}
-                  onValueChange={(value) => updateSettings({ colorTheme: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Default (Purple)</SelectItem>
-                    <SelectItem value="purple">Royal Purple</SelectItem>
-                    <SelectItem value="blue">Ocean Blue</SelectItem>
-                    <SelectItem value="green">Forest Green</SelectItem>
-                    <SelectItem value="orange">Sunset Orange</SelectItem>
-                    <SelectItem value="red">Ruby Red</SelectItem>
-                    <SelectItem value="pink">Rose Pink</SelectItem>
-                    <SelectItem value="cyan">Aqua Cyan</SelectItem>
-                    <SelectItem value="indigo">Deep Indigo</SelectItem>
-                    <SelectItem value="teal">Tropical Teal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <Label className="flex items-center gap-2">
-                  <Moon className="w-4 h-4" />
-                  Dark Mode
-                </Label>
-                <Switch
-                  checked={settings.darkMode}
-                  onCheckedChange={(checked) => updateSettings({ darkMode: checked })}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Story Card */}
-          <Card className="border-2 shadow-xl">
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <Heart className="w-6 h-6 text-red-500" />
-                <h2 className="text-2xl font-bold">The Story Behind ZARA AI HUB</h2>
-              </div>
-              
-              <p className="text-muted-foreground leading-relaxed">
-                This platform was built by <span className="font-semibold text-foreground">Zara Goodluck</span>, 
-                a passionate young developer who dreamed of creating something that could help people connect with AI 
-                in meaningful ways. Despite facing numerous challenges and countless hours of learning, Zara persevered 
-                with determination and creativity.
+            <CardContent className="space-y-4">
+              <p className="text-lg text-center text-muted-foreground max-w-3xl mx-auto">
+                ZARA AI HUB is a cutting-edge artificial intelligence platform that combines powerful text generation 
+                with advanced image creation capabilities. Whether you need creative content, professional writing, 
+                or stunning visuals, our AI models are here to assist you 24/7.
               </p>
               
-              <p className="text-muted-foreground leading-relaxed">
-                Every line of code, every feature, and every design choice was carefully crafted with the user in mind. 
-                This isn't just another AI tool - it's a labor of love, built to empower users to explore the limitless 
-                possibilities of artificial intelligence.
-              </p>
-
-              <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
-                <p className="text-sm italic text-muted-foreground">
-                  "Technology should be accessible to everyone, regardless of their technical expertise. 
-                  That's why I built ZARA AI HUB - to bridge the gap between complex AI and everyday users."
-                  <span className="block mt-2 text-right font-semibold text-foreground">- Zara Goodluck</span>
-                </p>
+              <div className="grid md:grid-cols-2 gap-6 mt-8">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AI Text Generation</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Access multiple specialized AI models for creative writing, technical content, translations, and more
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <ImageIcon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">AI Image Creation</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Generate professional images from text descriptions using state-of-the-art AI models
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Customizable Interface</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Personalize your experience with multiple themes, fonts, and color schemes
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-1">Secure & Reliable</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Your data and conversations are protected with enterprise-grade security
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -179,66 +134,86 @@ export function Landing() {
               <Card className="border-2 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
                 <CardContent className="pt-6 text-center space-y-3">
                   <div className="w-12 h-12 mx-auto gradient-primary rounded-full flex items-center justify-center shadow-primary">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-bold text-lg">Smart AI Assistants</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Multiple specialized AI models for writing, coding, creative content, and professional communication
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
+                <CardContent className="pt-6 text-center space-y-3">
+                  <div className="w-12 h-12 mx-auto gradient-primary rounded-full flex items-center justify-center shadow-primary">
+                    <ImageIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-bold text-lg">Image Generation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create stunning visuals with cutting-edge AI models like Flux, DALL-E 3, and Stable Diffusion XL
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
+                <CardContent className="pt-6 text-center space-y-3">
+                  <div className="w-12 h-12 mx-auto gradient-primary rounded-full flex items-center justify-center shadow-primary">
                     <Zap className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="font-bold text-lg">Multiple AI Agents</h3>
+                  <h3 className="font-bold text-lg">Fast & Reliable</h3>
                   <p className="text-sm text-muted-foreground">
-                    Choose from various specialized AI agents, each designed for different tasks and conversations
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
-                <CardContent className="pt-6 text-center space-y-3">
-                  <div className="w-12 h-12 mx-auto gradient-primary rounded-full flex items-center justify-center shadow-primary">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-bold text-lg">Customizable Experience</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Personalize your interface with multiple themes, fonts, and color schemes to match your style
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 bg-card/80 backdrop-blur-sm">
-                <CardContent className="pt-6 text-center space-y-3">
-                  <div className="w-12 h-12 mx-auto gradient-primary rounded-full flex items-center justify-center shadow-primary">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-bold text-lg">Secure & Private</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your conversations and data are protected with enterprise-grade security measures
+                    Lightning-fast responses with 99.9% uptime, powered by enterprise-grade infrastructure
                   </p>
                 </CardContent>
               </Card>
             </div>
           </div>
 
-          {/* Terms Section */}
-          <Card className="border-2 bg-muted/30">
-            <CardContent className="pt-6 space-y-4">
-              <h3 className="text-xl font-bold">Terms of Service</h3>
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  <strong className="text-foreground">1. Acceptance of Terms:</strong> By accessing ZARA AI HUB, 
-                  you agree to use this platform responsibly and respect the community guidelines.
-                </p>
-                <p>
-                  <strong className="text-foreground">2. User Responsibilities:</strong> You are responsible for 
-                  maintaining the confidentiality of your account and for all activities under your account.
-                </p>
-                <p>
-                  <strong className="text-foreground">3. AI Usage:</strong> The AI responses are generated by 
-                  third-party services. While we strive for accuracy, please verify important information independently.
-                </p>
-                <p>
-                  <strong className="text-foreground">4. Privacy:</strong> We respect your privacy. Your personal 
-                  information and conversations are stored securely and never shared with third parties without consent.
-                </p>
-                <p>
-                  <strong className="text-foreground">5. Content Policy:</strong> Users must not use this platform 
-                  to generate harmful, illegal, or inappropriate content.
-                </p>
+          {/* Contact Section */}
+          <Card className="border-2 shadow-xl bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center flex items-center justify-center gap-2">
+                <MessageCircle className="w-6 h-6" />
+                Get in Touch
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-center text-muted-foreground">
+                Have questions or need support? Reach out to us directly!
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                <Card className="border-2 hover:shadow-lg transition-all">
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                      <Mail className="w-6 h-6 text-primary" />
+                    </div>
+                    <h4 className="font-semibold text-center">Email</h4>
+                    <a 
+                      href="mailto:mgbeahuruchizaram336@gmail.com"
+                      className="text-sm text-primary hover:underline block text-center break-all"
+                    >
+                      mgbeahuruchizaram336@gmail.com
+                    </a>
+                  </CardContent>
+                </Card>
+                
+                <Card className="border-2 hover:shadow-lg transition-all">
+                  <CardContent className="pt-6 space-y-3">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                      <Phone className="w-6 h-6 text-primary" />
+                    </div>
+                    <h4 className="font-semibold text-center">WhatsApp</h4>
+                    <a 
+                      href="https://wa.me/2347011156046"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline block text-center"
+                    >
+                      +234 701 115 6046
+                    </a>
+                  </CardContent>
+                </Card>
               </div>
             </CardContent>
           </Card>
