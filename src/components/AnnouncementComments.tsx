@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +74,19 @@ export function AnnouncementComments({ announcementId }: AnnouncementCommentsPro
     toast.success("Comment added!");
   };
 
+  const handleDelete = (commentId: string, commentUsername: string) => {
+    if (commentUsername !== username) {
+      toast.error("You can only delete your own comments");
+      return;
+    }
+
+    const storageKey = `announcement_comments_${announcementId}`;
+    const updatedComments = comments.filter(c => c.id !== commentId);
+    localStorage.setItem(storageKey, JSON.stringify(updatedComments));
+    setComments(updatedComments);
+    toast.success("Comment deleted");
+  };
+
   return (
     <div className="mt-3 space-y-3 border-t pt-3">
       <h4 className="text-xs font-semibold">Comments ({comments.length})</h4>
@@ -103,9 +116,21 @@ export function AnnouncementComments({ announcementId }: AnnouncementCommentsPro
               <div key={comment.id} className="bg-muted/50 rounded-lg p-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-semibold">{comment.username}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {new Date(comment.timestamp).toLocaleString()}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(comment.timestamp).toLocaleString()}
+                    </span>
+                    {comment.username === username && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => handleDelete(comment.id, comment.username)}
+                      >
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{comment.text}</p>
               </div>

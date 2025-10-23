@@ -90,20 +90,21 @@ export function Header({ currentView, onViewChange, showMessaging = true }: Head
           </Sheet>
           
           {/* Centered Title */}
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <h1 className="text-2xl md:text-4xl font-black tracking-tight">
+          <div className="flex-1 flex items-center justify-center gap-3">
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight whitespace-nowrap">
               <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                ZARA AI HUB
+                ZAH
               </span>
             </h1>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5 font-medium tracking-wide hidden sm:block">
-              Powered by AI Technology
-            </p>
+            {showMessaging && (
+              <div className="hidden sm:block">
+                <UserMessaging />
+              </div>
+            )}
           </div>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
-            {showMessaging && <UserMessaging />}
             <Button
               variant={currentView === "home" ? "default" : "ghost"}
               size="sm"
@@ -142,7 +143,9 @@ export function Header({ currentView, onViewChange, showMessaging = true }: Head
 
           {/* Mobile Quick Access */}
           <div className="md:hidden flex items-center gap-2">
-            {showMessaging && <UserMessaging />}
+            <div className="sm:hidden">
+              {showMessaging && <UserMessaging />}
+            </div>
             <Button
               variant="ghost"
               size="icon"
