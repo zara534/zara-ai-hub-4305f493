@@ -226,11 +226,11 @@ export function Landing() {
           <Card className="border-2 border-primary/30 bg-card/90 backdrop-blur hover:shadow-2xl transition-all hover:-translate-y-2 hover:scale-105 animate-fade-in">
             <CardContent className="pt-6 pb-6 text-center space-y-3">
               <div className="w-14 h-14 mx-auto bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-                <Shield className="w-7 h-7 text-white" />
+                <Zap className="w-7 h-7 text-white" />
               </div>
-              <h3 className="font-bold text-xl">Admin Control</h3>
+              <h3 className="font-bold text-xl">Fast & Reliable</h3>
               <p className="text-sm text-muted-foreground">
-                Manage custom AI models, broadcast announcements, and control platform settings with ease.
+                Lightning-fast AI responses with streaming technology. Experience smooth, real-time generation every time.
               </p>
             </CardContent>
           </Card>

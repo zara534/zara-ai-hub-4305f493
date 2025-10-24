@@ -34,6 +34,12 @@ interface AppSettings {
   darkMode: boolean;
 }
 
+export interface RateLimits {
+  dailyTextGenerations: number;
+  dailyImageGenerations: number;
+  isUnlimited: boolean;
+}
+
 interface AppContextType {
   aiModels: AIModel[];
   addAIModel: (model: Omit<AIModel, "id">) => void;
@@ -48,6 +54,8 @@ interface AppContextType {
   removeAnnouncement: (id: string) => void;
   settings: AppSettings;
   updateSettings: (settings: Partial<AppSettings>) => void;
+  rateLimits: RateLimits;
+  updateRateLimits: (limits: Partial<RateLimits>) => void;
   isAdmin: boolean;
   login: (password: string) => boolean;
   logout: () => void;
@@ -150,6 +158,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : { fontFamily: "inter", colorTheme: "default", darkMode: false };
   });
 
+  const [rateLimits, setRateLimits] = useState<RateLimits>(() => {
+    const stored = localStorage.getItem("rateLimits");
+    return stored
+      ? JSON.parse(stored)
+      : { dailyTextGenerations: 50, dailyImageGenerations: 20, isUnlimited: false };
+  });
+
   const [isAdmin, setIsAdmin] = useState(() => {
     return localStorage.getItem("isAdmin") === "true";
   });
@@ -172,6 +187,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.fontFamily = getFontFamily(settings.fontFamily);
     document.documentElement.setAttribute("data-theme", settings.colorTheme);
   }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem("rateLimits", JSON.stringify(rateLimits));
+  }, [rateLimits]);
 
   const addAIModel = (model: Omit<AIModel, "id">) => {
     const newModel = { ...model, id: Date.now().toString() };
@@ -220,6 +239,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
+  const updateRateLimits = (newLimits: Partial<RateLimits>) => {
+    setRateLimits((prev) => ({ ...prev, ...newLimits }));
+  };
+
   const login = (password: string) => {
     if (password === "zarahacks") {
       setIsAdmin(true);
@@ -250,6 +273,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         removeAnnouncement,
         settings,
         updateSettings,
+        rateLimits,
+        updateRateLimits,
         isAdmin,
         login,
         logout,
