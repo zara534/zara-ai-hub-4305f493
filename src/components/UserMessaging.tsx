@@ -68,7 +68,16 @@ export function UserMessaging() {
       const stored = localStorage.getItem("announcements");
       if (stored) {
         const data = JSON.parse(stored);
-        setAnnouncements(data);
+        
+        // Load like counts for each announcement
+        const likesKey = "announcement_likes_by_user";
+        const allLikes = JSON.parse(localStorage.getItem(likesKey) || "{}");
+        const dataWithLikes = data.map((ann: Announcement) => ({
+          ...ann,
+          likes: allLikes[ann.id]?.total || 0
+        }));
+        
+        setAnnouncements(dataWithLikes);
         
         // Check localStorage for last read timestamp
         const lastRead = localStorage.getItem("last_announcement_read");
@@ -85,8 +94,20 @@ export function UserMessaging() {
   };
 
   const loadLikedAnnouncements = () => {
-    const liked = JSON.parse(localStorage.getItem("liked_announcements") || "[]");
-    setLikedAnnouncements(new Set(liked));
+    if (!user) return;
+    
+    const likesKey = "announcement_likes_by_user";
+    const allLikes = JSON.parse(localStorage.getItem(likesKey) || "{}");
+    const liked = new Set<string>();
+    
+    // Find all announcements this user has liked
+    Object.keys(allLikes).forEach(announcementId => {
+      if (allLikes[announcementId].users?.includes(user.id)) {
+        liked.add(announcementId);
+      }
+    });
+    
+    setLikedAnnouncements(liked);
   };
 
   const handleLike = (announcementId: string) => {
