@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface AIModel {
   id: string;
@@ -42,13 +44,13 @@ export interface RateLimits {
 
 interface AppContextType {
   aiModels: AIModel[];
-  addAIModel: (model: Omit<AIModel, "id">) => void;
-  removeAIModel: (id: string) => void;
-  updateTextModel: (id: string, updates: Partial<AIModel>) => void;
+  addAIModel: (model: Omit<AIModel, "id">) => Promise<void>;
+  removeAIModel: (id: string) => Promise<void>;
+  updateTextModel: (id: string, updates: Partial<AIModel>) => Promise<void>;
   imageModels: ImageModel[];
-  addImageModel: (model: Omit<ImageModel, "id">) => void;
-  updateImageModel: (id: string, updates: Partial<ImageModel>) => void;
-  removeImageModel: (id: string) => void;
+  addImageModel: (model: Omit<ImageModel, "id">) => Promise<void>;
+  updateImageModel: (id: string, updates: Partial<ImageModel>) => Promise<void>;
+  removeImageModel: (id: string) => Promise<void>;
   announcements: Announcement[];
   addAnnouncement: (announcement: Omit<Announcement, "id" | "createdAt">) => void;
   removeAnnouncement: (id: string) => void;
@@ -136,15 +138,8 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [aiModels, setAIModels] = useState<AIModel[]>(() => {
-    const stored = localStorage.getItem("aiModels");
-    return stored ? JSON.parse(stored) : DEFAULT_MODELS;
-  });
-
-  const [imageModels, setImageModels] = useState<ImageModel[]>(() => {
-    const stored = localStorage.getItem("imageModels");
-    return stored ? JSON.parse(stored) : DEFAULT_IMAGE_MODELS;
-  });
+  const [aiModels, setAIModels] = useState<AIModel[]>(DEFAULT_MODELS);
+  const [imageModels, setImageModels] = useState<ImageModel[]>(DEFAULT_IMAGE_MODELS);
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
     const stored = localStorage.getItem("announcements");
@@ -170,12 +165,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem("aiModels", JSON.stringify(aiModels));
-  }, [aiModels]);
+    loadAIModels();
+    loadImageModels();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("imageModels", JSON.stringify(imageModels));
-  }, [imageModels]);
+  const loadAIModels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("ai_models")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const models = data.map((model) => ({
+          id: model.id,
+          name: model.name,
+          behavior: model.behavior,
+          emoji: model.emoji,
+          systemPrompt: model.system_prompt,
+          description: model.description,
+        }));
+        setAIModels(models);
+      }
+    } catch (error: any) {
+      console.error("Error loading AI models:", error);
+    }
+  };
+
+  const loadImageModels = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("image_models")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const models = data.map((model) => ({
+          id: model.id,
+          name: model.name,
+          emoji: model.emoji,
+          apiEndpoint: model.api_endpoint,
+          description: model.description,
+          modelType: model.model_type,
+          systemPrompt: model.system_prompt,
+          examplePrompts: model.example_prompts,
+        }));
+        setImageModels(models);
+      }
+    } catch (error: any) {
+      console.error("Error loading image models:", error);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem("announcements", JSON.stringify(announcements));
@@ -192,34 +236,132 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("rateLimits", JSON.stringify(rateLimits));
   }, [rateLimits]);
 
-  const addAIModel = (model: Omit<AIModel, "id">) => {
+  const addAIModel = async (model: Omit<AIModel, "id">) => {
     const newModel = { ...model, id: Date.now().toString() };
-    setAIModels((prev) => [...prev, newModel]);
+    try {
+      const { error } = await supabase.from("ai_models").insert({
+        id: newModel.id,
+        name: newModel.name,
+        behavior: newModel.behavior,
+        emoji: newModel.emoji,
+        system_prompt: newModel.systemPrompt,
+        description: newModel.description,
+      });
+
+      if (error) throw error;
+
+      setAIModels((prev) => [...prev, newModel]);
+      toast.success("AI model added successfully!");
+    } catch (error: any) {
+      console.error("Error adding AI model:", error);
+      toast.error("Failed to add AI model");
+    }
   };
 
-  const removeAIModel = (id: string) => {
-    setAIModels((prev) => prev.filter((m) => m.id !== id));
+  const removeAIModel = async (id: string) => {
+    try {
+      const { error } = await supabase.from("ai_models").delete().eq("id", id);
+
+      if (error) throw error;
+
+      setAIModels((prev) => prev.filter((m) => m.id !== id));
+      toast.success("AI model removed successfully!");
+    } catch (error: any) {
+      console.error("Error removing AI model:", error);
+      toast.error("Failed to remove AI model");
+    }
   };
 
-  const updateTextModel = (id: string, updates: Partial<AIModel>) => {
-    setAIModels((prev) =>
-      prev.map((model) => (model.id === id ? { ...model, ...updates } : model))
-    );
+  const updateTextModel = async (id: string, updates: Partial<AIModel>) => {
+    try {
+      const { error } = await supabase
+        .from("ai_models")
+        .update({
+          name: updates.name,
+          behavior: updates.behavior,
+          emoji: updates.emoji,
+          system_prompt: updates.systemPrompt,
+          description: updates.description,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setAIModels((prev) =>
+        prev.map((model) => (model.id === id ? { ...model, ...updates } : model))
+      );
+      toast.success("AI model updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating AI model:", error);
+      toast.error("Failed to update AI model");
+    }
   };
 
-  const addImageModel = (model: Omit<ImageModel, "id">) => {
+  const addImageModel = async (model: Omit<ImageModel, "id">) => {
     const newModel = { ...model, id: Date.now().toString() };
-    setImageModels((prev) => [...prev, newModel]);
+    try {
+      const { error } = await supabase.from("image_models").insert({
+        id: newModel.id,
+        name: newModel.name,
+        emoji: newModel.emoji,
+        api_endpoint: newModel.apiEndpoint,
+        description: newModel.description,
+        model_type: newModel.modelType,
+        system_prompt: newModel.systemPrompt,
+        example_prompts: newModel.examplePrompts,
+      });
+
+      if (error) throw error;
+
+      setImageModels((prev) => [...prev, newModel]);
+      toast.success("Image model added successfully!");
+    } catch (error: any) {
+      console.error("Error adding image model:", error);
+      toast.error("Failed to add image model");
+    }
   };
 
-  const updateImageModel = (id: string, updates: Partial<ImageModel>) => {
-    setImageModels((prev) =>
-      prev.map((model) => (model.id === id ? { ...model, ...updates } : model))
-    );
+  const updateImageModel = async (id: string, updates: Partial<ImageModel>) => {
+    try {
+      const { error } = await supabase
+        .from("image_models")
+        .update({
+          name: updates.name,
+          emoji: updates.emoji,
+          api_endpoint: updates.apiEndpoint,
+          description: updates.description,
+          model_type: updates.modelType,
+          system_prompt: updates.systemPrompt,
+          example_prompts: updates.examplePrompts,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setImageModels((prev) =>
+        prev.map((model) => (model.id === id ? { ...model, ...updates } : model))
+      );
+      toast.success("Image model updated successfully!");
+    } catch (error: any) {
+      console.error("Error updating image model:", error);
+      toast.error("Failed to update image model");
+    }
   };
 
-  const removeImageModel = (id: string) => {
-    setImageModels((prev) => prev.filter((m) => m.id !== id));
+  const removeImageModel = async (id: string) => {
+    try {
+      const { error } = await supabase.from("image_models").delete().eq("id", id);
+
+      if (error) throw error;
+
+      setImageModels((prev) => prev.filter((m) => m.id !== id));
+      toast.success("Image model removed successfully!");
+    } catch (error: any) {
+      console.error("Error removing image model:", error);
+      toast.error("Failed to remove image model");
+    }
   };
 
   const addAnnouncement = (announcement: Omit<Announcement, "id" | "createdAt">) => {

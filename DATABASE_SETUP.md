@@ -1,6 +1,30 @@
 # Database Setup Instructions
 
-## User Profiles Setup (Optional)
+## ⚠️ IMPORTANT: Required Database Setup
+
+For the AI models and Image models to sync across all users, you **MUST** run the SQL setup in Supabase.
+
+## Step 1: AI Models & Image Models Setup (REQUIRED)
+
+**DO THIS FIRST - Your app won't work properly without this!**
+
+1. Open your Supabase Dashboard → SQL Editor
+2. Copy ALL the SQL from `DATABASE_MODELS_SETUP.sql`
+3. Paste and run it in the SQL Editor
+4. You should see success messages for table creation, RLS policies, and default data insertion
+
+This creates:
+- ✅ `ai_models` table - stores text AI generators (syncs across all users)
+- ✅ `image_models` table - stores image AI generators (syncs across all users)  
+- ✅ Default models (Creative Writer, Code Helper, Flux, DALL-E 3, etc.)
+
+**After running the SQL:**
+- When you add/edit models from the admin panel, all users see the changes immediately
+- No more localStorage - everything syncs via Supabase
+
+**Security Note:** See `SECURITY_NOTE.md` for important information about access control if deploying publicly.
+
+## Step 2: User Profiles Setup (Optional)
 
 If you want the AI to know users' names, run this SQL in your Supabase Dashboard → SQL Editor:
 
