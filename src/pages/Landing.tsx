@@ -9,7 +9,7 @@ import {
   Bot, 
   Image as ImageIcon, 
   MessageCircle, 
-  Facebook, 
+  Mail, 
   Phone, 
   Palette, 
   Bell, 
@@ -261,17 +261,15 @@ export function Landing() {
                 </a>
                 
                 <a 
-                  href="https://www.facebook.com/profile.php?id=61579058107810"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="mailto:mgbeahuruchizaram336@gmail.com"
                   className="flex items-center gap-3 p-4 rounded-xl hover:bg-primary/10 transition-all hover:scale-105 group border-2 border-transparent hover:border-primary/30"
                 >
                   <div className="p-2 bg-primary/10 rounded-lg">
-                    <Facebook className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                    <Mail className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
                   </div>
                   <div>
-                    <div className="font-semibold">Follow on Facebook</div>
-                    <div className="text-sm text-muted-foreground">Join our community</div>
+                    <div className="font-semibold">Email Us</div>
+                    <div className="text-sm text-muted-foreground">mgbeahuruchizaram336@gmail.com</div>
                   </div>
                 </a>
               </div>

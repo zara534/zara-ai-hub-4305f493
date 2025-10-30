@@ -24,7 +24,24 @@ This creates:
 
 **Security Note:** See `SECURITY_NOTE.md` for important information about access control if deploying publicly.
 
-## Step 2: User Profiles Setup (Optional)
+## Step 2: Usage Tracking, Likes & Comments Setup (REQUIRED)
+
+**This is also mandatory for rate limiting and social features to work!**
+
+Run the SQL from `DATABASE_USAGE_AND_LIKES_SETUP.sql` in your Supabase Dashboard → SQL Editor.
+
+This creates:
+- ✅ `user_usage` table - tracks daily usage for rate limiting (syncs across devices)
+- ✅ `model_likes` table - stores likes for AI models (syncs across devices)
+- ✅ `announcement_comments` table - stores comments on announcements (syncs across devices)
+
+**After running the SQL:**
+- Rate limits will be enforced properly
+- Users will see their daily usage count
+- Likes and comments will sync across all devices
+- Everything stored centrally in Supabase
+
+## Step 3: User Profiles Setup (Optional)
 
 If you want the AI to know users' names, run this SQL in your Supabase Dashboard → SQL Editor:
 

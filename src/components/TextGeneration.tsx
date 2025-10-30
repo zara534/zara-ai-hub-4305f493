@@ -18,7 +18,7 @@ interface Message {
 }
 
 export function TextGeneration() {
-  const { aiModels } = useApp();
+  const { aiModels, rateLimits } = useApp();
   const { user } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
@@ -26,11 +26,13 @@ export function TextGeneration() {
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [username, setUsername] = useState<string>("");
+  const [usageCount, setUsageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     loadUsername();
+    loadUsage();
   }, [user]);
 
   const loadUsername = async () => {
@@ -49,6 +51,61 @@ export function TextGeneration() {
     }
   };
 
+  const loadUsage = async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from("user_usage")
+        .select("text_generations")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .single();
+      
+      if (data) {
+        setUsageCount(data.text_generations);
+      }
+    } catch (error) {
+      console.error("Error loading usage:", error);
+    }
+  };
+
+  const incrementUsage = async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existing } = await supabase
+        .from("user_usage")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("user_usage")
+          .update({ 
+            text_generations: existing.text_generations + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existing.id);
+        setUsageCount(existing.text_generations + 1);
+      } else {
+        await supabase
+          .from("user_usage")
+          .insert({ 
+            user_id: user.id,
+            usage_date: today,
+            text_generations: 1,
+            image_generations: 0
+          });
+        setUsageCount(1);
+      }
+    } catch (error) {
+      console.error("Error incrementing usage:", error);
+    }
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -59,6 +116,12 @@ export function TextGeneration() {
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt");
+      return;
+    }
+
+    // Check rate limits
+    if (!rateLimits.isUnlimited && usageCount >= rateLimits.dailyTextGenerations) {
+      toast.error(`Daily limit reached! You can generate ${rateLimits.dailyTextGenerations} texts per day. Current usage: ${usageCount}/${rateLimits.dailyTextGenerations}`);
       return;
     }
 
@@ -143,6 +206,7 @@ export function TextGeneration() {
       }
       
       if (!abortControllerRef.current?.signal.aborted) {
+        await incrementUsage();
         toast.success("Response complete!");
       }
     } catch (error: any) {

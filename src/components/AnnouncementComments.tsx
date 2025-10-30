@@ -45,46 +45,91 @@ export function AnnouncementComments({ announcementId }: AnnouncementCommentsPro
     }
   };
 
-  const loadComments = () => {
-    const storageKey = `announcement_comments_${announcementId}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      setComments(JSON.parse(stored));
+  const loadComments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("announcement_comments")
+        .select("*")
+        .eq("announcement_id", announcementId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedComments = data.map((c) => ({
+          id: c.id,
+          text: c.comment_text,
+          username: c.username,
+          timestamp: new Date(c.created_at).getTime(),
+        }));
+        setComments(formattedComments);
+      }
+    } catch (error: any) {
+      console.error("Error loading comments:", error);
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!newComment.trim()) {
       toast.error("Please enter a comment");
       return;
     }
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      text: newComment.trim(),
-      username: username || "Anonymous",
-      timestamp: Date.now(),
-    };
+    if (!user) {
+      toast.error("Please log in to comment");
+      return;
+    }
 
-    const storageKey = `announcement_comments_${announcementId}`;
-    const updatedComments = [comment, ...comments];
-    localStorage.setItem(storageKey, JSON.stringify(updatedComments));
-    setComments(updatedComments);
-    setNewComment("");
-    toast.success("Comment added!");
+    try {
+      const { data, error } = await supabase
+        .from("announcement_comments")
+        .insert({
+          announcement_id: announcementId,
+          user_id: user.id,
+          username: username || "Anonymous",
+          comment_text: newComment.trim(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newCommentObj: Comment = {
+        id: data.id,
+        text: data.comment_text,
+        username: data.username,
+        timestamp: new Date(data.created_at).getTime(),
+      };
+
+      setComments([newCommentObj, ...comments]);
+      setNewComment("");
+      toast.success("Comment added!");
+    } catch (error: any) {
+      console.error("Error adding comment:", error);
+      toast.error("Failed to add comment");
+    }
   };
 
-  const handleDelete = (commentId: string, commentUsername: string) => {
+  const handleDelete = async (commentId: string, commentUsername: string) => {
     if (commentUsername !== username) {
       toast.error("You can only delete your own comments");
       return;
     }
 
-    const storageKey = `announcement_comments_${announcementId}`;
-    const updatedComments = comments.filter(c => c.id !== commentId);
-    localStorage.setItem(storageKey, JSON.stringify(updatedComments));
-    setComments(updatedComments);
-    toast.success("Comment deleted");
+    try {
+      const { error } = await supabase
+        .from("announcement_comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) throw error;
+
+      setComments(comments.filter(c => c.id !== commentId));
+      toast.success("Comment deleted");
+    } catch (error: any) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment");
+    }
   };
 
   return (

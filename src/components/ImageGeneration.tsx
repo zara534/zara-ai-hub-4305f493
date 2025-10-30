@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Download, Image as ImageIcon, Copy, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { AIModelRatings } from "./AIModelRatings";
 
 interface ImageModel {
@@ -82,8 +84,69 @@ export function ImageGeneration() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const { imageModels = DEFAULT_IMAGE_MODELS } = useApp();
+  const [usageCount, setUsageCount] = useState(0);
+  const { imageModels = DEFAULT_IMAGE_MODELS, rateLimits } = useApp();
+  const { user } = useAuth();
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    loadUsage();
+  }, [user]);
+
+  const loadUsage = async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from("user_usage")
+        .select("image_generations")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .single();
+      
+      if (data) {
+        setUsageCount(data.image_generations);
+      }
+    } catch (error) {
+      console.error("Error loading usage:", error);
+    }
+  };
+
+  const incrementUsage = async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existing } = await supabase
+        .from("user_usage")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("user_usage")
+          .update({ 
+            image_generations: existing.image_generations + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existing.id);
+        setUsageCount(existing.image_generations + 1);
+      } else {
+        await supabase
+          .from("user_usage")
+          .insert({ 
+            user_id: user.id,
+            usage_date: today,
+            text_generations: 0,
+            image_generations: 1
+          });
+        setUsageCount(1);
+      }
+    } catch (error) {
+      console.error("Error incrementing usage:", error);
+    }
+  };
 
   const getImageDimensions = (ratio: string) => {
     const dimensions: Record<string, { width: number; height: number }> = {
@@ -99,6 +162,12 @@ export function ImageGeneration() {
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt");
+      return;
+    }
+
+    // Check rate limits
+    if (!rateLimits.isUnlimited && usageCount >= rateLimits.dailyImageGenerations) {
+      toast.error(`Daily limit reached! You can generate ${rateLimits.dailyImageGenerations} images per day. Current usage: ${usageCount}/${rateLimits.dailyImageGenerations}`);
       return;
     }
 
@@ -129,6 +198,7 @@ export function ImageGeneration() {
           timestamp: Date.now()
         };
         setGeneratedImages(prev => [newImage, ...prev]);
+        incrementUsage();
         toast.success("Image generated successfully!");
         setIsLoading(false);
       };
