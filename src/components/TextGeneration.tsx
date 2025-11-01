@@ -3,20 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw, Heart } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AIModelRatings } from "@/components/AIModelRatings";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  likes?: number;
-  hasLiked?: boolean;
 }
 
 export function TextGeneration() {
@@ -33,7 +32,6 @@ export function TextGeneration() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareContent, setShareContent] = useState("");
-  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsername();
@@ -190,8 +188,6 @@ export function TextGeneration() {
         id: assistantId,
         role: "assistant",
         content: "",
-        likes: 0,
-        hasLiked: false,
       };
       setMessages((prev) => [...prev, assistantMessage]);
       
@@ -321,49 +317,6 @@ export function TextGeneration() {
     }
   };
 
-  const handleLikeMessage = async (messageId: string) => {
-    const message = messages.find(m => m.id === messageId);
-    if (!message || !user) {
-      toast.error("Please log in to like messages");
-      return;
-    }
-
-    try {
-      if (message.hasLiked) {
-        await supabase
-          .from("model_likes")
-          .delete()
-          .eq("model_id", `message_${messageId}`)
-          .eq("model_type", "text")
-          .eq("user_id", user.id);
-        
-        setMessages(prev => prev.map(m => 
-          m.id === messageId 
-            ? { ...m, likes: Math.max(0, (m.likes || 0) - 1), hasLiked: false }
-            : m
-        ));
-      } else {
-        await supabase
-          .from("model_likes")
-          .insert({
-            user_id: user.id,
-            model_id: `message_${messageId}`,
-            model_type: "text"
-          });
-        
-        setMessages(prev => prev.map(m => 
-          m.id === messageId 
-            ? { ...m, likes: (m.likes || 0) + 1, hasLiked: true }
-            : m
-        ));
-        toast.success("Thanks for your feedback!");
-      }
-    } catch (error: any) {
-      console.error("Error toggling like:", error);
-      toast.error("Failed to update like");
-    }
-  };
-
   const selectedModelData = aiModels.find((m) => m.id === selectedModel);
 
   return (
@@ -371,25 +324,28 @@ export function TextGeneration() {
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <Select value={selectedModel} onValueChange={(value) => {
-              setSelectedModel(value);
-              const model = aiModels.find(m => m.id === value);
-              toast.success(`Switched to ${model?.name || 'AI Model'}`);
-            }}>
-              <SelectTrigger className="w-full md:w-[280px]">
-                <SelectValue placeholder="Choose AI Agent" />
-              </SelectTrigger>
-              <SelectContent>
-                {aiModels.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{model.emoji}</span>
-                      <span className="font-medium">{model.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-3 flex-1">
+              <Select value={selectedModel} onValueChange={(value) => {
+                setSelectedModel(value);
+                const model = aiModels.find(m => m.id === value);
+                toast.success(`Switched to ${model?.name || 'AI Model'}`);
+              }}>
+                <SelectTrigger className="w-full md:w-[280px]">
+                  <SelectValue placeholder="Choose AI Agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{model.emoji}</span>
+                        <span className="font-medium">{model.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <AIModelRatings modelId={selectedModel} modelType="text" />
+            </div>
             <div className="flex items-center gap-2">
               {messages.length > 0 && (
                 <Button
@@ -438,26 +394,22 @@ export function TextGeneration() {
                       </span>
                     </div>
                   )}
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[75%]">
                     <div
-                      onClick={() => setSelectedMessageId(selectedMessageId === message.id ? null : message.id)}
-                      className={`rounded-2xl px-3 py-2 md:px-5 md:py-3 max-w-[85%] md:max-w-[75%] transition-all duration-300 cursor-pointer ${
+                      className={`rounded-2xl px-3 py-2 md:px-5 md:py-3 ${
                         message.role === "user"
                           ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-gradient-to-br from-muted/60 to-muted/40 border border-primary/20 shadow-soft"
+                          : "bg-muted/50"
                       }`}
                     >
                       <p className="text-xs md:text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {message.content || (message.role === "assistant" && isLoading ? (
-                          <span className="flex items-center gap-2 text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Thinking...
-                          </span>
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : message.content)}
                       </p>
                     </div>
-                    {selectedMessageId === message.id && message.content && (
-                      <div className="flex items-center gap-1 bg-background/95 backdrop-blur rounded-full px-2 py-1 shadow-lg border">
+                    {message.content && (
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -489,19 +441,6 @@ export function TextGeneration() {
                           </Button>
                         )}
                       </div>
-                    )}
-                    {message.role === "assistant" && message.content && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleLikeMessage(message.id)}
-                        className="gap-1 h-7"
-                      >
-                        <Heart 
-                          className={`w-4 h-4 transition-all ${message.hasLiked ? 'fill-primary text-primary' : ''}`} 
-                        />
-                        <span className="text-xs">{message.likes || 0}</span>
-                      </Button>
                     )}
                   </div>
                   {message.role === "user" && (
