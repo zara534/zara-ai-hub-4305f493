@@ -3,18 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Download, Copy, Check, X } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { AIModelRatings } from "./AIModelRatings";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  likes?: number;
+  hasLiked?: boolean;
 }
 
 export function TextGeneration() {
@@ -29,6 +31,9 @@ export function TextGeneration() {
   const [usageCount, setUsageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareContent, setShareContent] = useState("");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsername();
@@ -185,6 +190,8 @@ export function TextGeneration() {
         id: assistantId,
         role: "assistant",
         content: "",
+        likes: 0,
+        hasLiked: false,
       };
       setMessages((prev) => [...prev, assistantMessage]);
       
@@ -257,6 +264,106 @@ export function TextGeneration() {
     toast.success("Conversation downloaded!");
   };
 
+  const handleShare = (content: string) => {
+    setShareContent(content);
+    setShareDialogOpen(true);
+  };
+
+  const shareToSocial = (platform: string) => {
+    const text = `Chat with lots of AI models here!\n\n"${shareContent}"\n\n`;
+    const url = window.location.href;
+    let shareUrl = "";
+
+    switch (platform) {
+      case "whatsapp":
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + url)}`;
+        break;
+      case "facebook":
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
+        break;
+      case "twitter":
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        break;
+      case "linkedin":
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        break;
+      case "tiktok":
+        toast.info("Please copy the text and share manually on TikTok");
+        navigator.clipboard.writeText(text + url);
+        return;
+      case "instagram":
+        toast.info("Please copy the text and share manually on Instagram");
+        navigator.clipboard.writeText(text + url);
+        return;
+      case "youtube":
+        toast.info("Please copy the text and share manually on YouTube");
+        navigator.clipboard.writeText(text + url);
+        return;
+    }
+
+    if (shareUrl) {
+      window.open(shareUrl, "_blank");
+      setShareDialogOpen(false);
+    }
+  };
+
+  const handleRegenerate = async (messageId: string) => {
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1 || messages[messageIndex].role !== "assistant") return;
+
+    const previousMessages = messages.slice(0, messageIndex);
+    setMessages(previousMessages);
+    
+    const lastUserMessage = previousMessages.filter(m => m.role === "user").pop();
+    if (lastUserMessage) {
+      setPrompt(lastUserMessage.content);
+      setTimeout(() => handleGenerate(), 100);
+    }
+  };
+
+  const handleLikeMessage = async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (!message || !user) {
+      toast.error("Please log in to like messages");
+      return;
+    }
+
+    try {
+      if (message.hasLiked) {
+        await supabase
+          .from("model_likes")
+          .delete()
+          .eq("model_id", `message_${messageId}`)
+          .eq("model_type", "text")
+          .eq("user_id", user.id);
+        
+        setMessages(prev => prev.map(m => 
+          m.id === messageId 
+            ? { ...m, likes: Math.max(0, (m.likes || 0) - 1), hasLiked: false }
+            : m
+        ));
+      } else {
+        await supabase
+          .from("model_likes")
+          .insert({
+            user_id: user.id,
+            model_id: `message_${messageId}`,
+            model_type: "text"
+          });
+        
+        setMessages(prev => prev.map(m => 
+          m.id === messageId 
+            ? { ...m, likes: (m.likes || 0) + 1, hasLiked: true }
+            : m
+        ));
+        toast.success("Thanks for your feedback!");
+      }
+    } catch (error: any) {
+      console.error("Error toggling like:", error);
+      toast.error("Failed to update like");
+    }
+  };
+
   const selectedModelData = aiModels.find((m) => m.id === selectedModel);
 
   return (
@@ -284,7 +391,6 @@ export function TextGeneration() {
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2">
-              <AIModelRatings modelId={selectedModel} modelType="text" />
               {messages.length > 0 && (
                 <Button
                   variant="outline"
@@ -332,23 +438,31 @@ export function TextGeneration() {
                       </span>
                     </div>
                   )}
-                  <div
-                     className={`rounded-2xl px-3 py-2 md:px-5 md:py-3 max-w-[85%] md:max-w-[75%] transition-all duration-300 ${
-                       message.role === "user"
-                         ? "bg-primary text-primary-foreground shadow-md"
-                         : "bg-gradient-to-br from-muted/60 to-muted/40 border border-primary/20 shadow-soft"
-                     }`}
-                  >
-                    <p className="text-xs md:text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {message.content}
-                    </p>
-                    {message.role === "assistant" && message.content && (
-                      <div className="flex justify-end mt-1 md:mt-2">
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      onClick={() => setSelectedMessageId(selectedMessageId === message.id ? null : message.id)}
+                      className={`rounded-2xl px-3 py-2 md:px-5 md:py-3 max-w-[85%] md:max-w-[75%] transition-all duration-300 cursor-pointer ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground shadow-md"
+                          : "bg-gradient-to-br from-muted/60 to-muted/40 border border-primary/20 shadow-soft"
+                      }`}
+                    >
+                      <p className="text-xs md:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {message.content || (message.role === "assistant" && isLoading ? (
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Thinking...
+                          </span>
+                        ) : message.content)}
+                      </p>
+                    </div>
+                    {selectedMessageId === message.id && message.content && (
+                      <div className="flex items-center gap-1 bg-background/95 backdrop-blur rounded-full px-2 py-1 shadow-lg border">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleCopy(message.content, message.id)}
-                          className="h-6 md:h-7 px-1 md:px-2"
+                          className="h-7 px-2"
                         >
                           {copiedId === message.id ? (
                             <Check className="w-3 h-3 text-green-500" />
@@ -356,31 +470,46 @@ export function TextGeneration() {
                             <Copy className="w-3 h-3" />
                           )}
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleShare(message.content)}
+                          className="h-7 px-2"
+                        >
+                          <Share2 className="w-3 h-3" />
+                        </Button>
+                        {message.role === "assistant" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRegenerate(message.id)}
+                            className="h-7 px-2"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
+                    )}
+                    {message.role === "assistant" && message.content && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLikeMessage(message.id)}
+                        className="gap-1 h-7"
+                      >
+                        <Heart 
+                          className={`w-4 h-4 transition-all ${message.hasLiked ? 'fill-primary text-primary' : ''}`} 
+                        />
+                        <span className="text-xs">{message.likes || 0}</span>
+                      </Button>
                     )}
                   </div>
                   {message.role === "user" && (
-                    <>
-                      <div className="flex flex-col items-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopy(message.content, message.id)}
-                          className="h-6 px-2"
-                        >
-                          {copiedId === message.id ? (
-                            <Check className="w-3 h-3 text-green-500" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                        </Button>
-                      </div>
-                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
-                        <span className="text-base md:text-lg font-bold text-primary-foreground">
-                          {username ? username.charAt(0).toUpperCase() : "U"}
-                        </span>
-                      </div>
-                    </>
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
+                      <span className="text-base md:text-lg font-bold text-primary-foreground">
+                        {username ? username.charAt(0).toUpperCase() : "U"}
+                      </span>
+                    </div>
                   )}
                 </div>
               ))
@@ -424,6 +553,44 @@ export function TextGeneration() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share AI Response</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 pt-4">
+            <Button onClick={() => shareToSocial("whatsapp")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              WhatsApp
+            </Button>
+            <Button onClick={() => shareToSocial("facebook")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              Facebook
+            </Button>
+            <Button onClick={() => shareToSocial("twitter")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              Twitter
+            </Button>
+            <Button onClick={() => shareToSocial("linkedin")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              LinkedIn
+            </Button>
+            <Button onClick={() => shareToSocial("tiktok")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              TikTok
+            </Button>
+            <Button onClick={() => shareToSocial("instagram")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              Instagram
+            </Button>
+            <Button onClick={() => shareToSocial("youtube")} className="gap-2">
+              <Share2 className="w-4 h-4" />
+              YouTube
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
