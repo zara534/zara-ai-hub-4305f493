@@ -9,6 +9,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AIModelRatings } from "./AIModelRatings";
+import { UsageLimitsDisplay } from "./UsageLimitsDisplay";
 
 interface ImageModel {
   id: string;
@@ -186,34 +187,59 @@ export function ImageGeneration() {
       const { width, height } = getImageDimensions(aspectRatio);
       const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=${width}&height=${height}&seed=${seed}`;
       
-      // Test if image loads successfully
-      const img = new Image();
-      img.onload = () => {
-        if (abortControllerRef.current?.signal.aborted) return;
+      // Add timeout for image loading
+      const timeoutMs = 30000; // 30 seconds
+      let timeoutId: NodeJS.Timeout;
+      
+      const imageLoadPromise = new Promise<void>((resolve, reject) => {
+        const img = new Image();
         
-        const newImage: GeneratedImage = {
-          id: Date.now().toString(),
-          url: imageUrl,
-          prompt: prompt,
-          timestamp: Date.now()
+        timeoutId = setTimeout(() => {
+          reject(new Error("Image generation timed out. Please try again."));
+        }, timeoutMs);
+        
+        img.onload = () => {
+          clearTimeout(timeoutId);
+          if (abortControllerRef.current?.signal.aborted) {
+            reject(new Error("Cancelled"));
+            return;
+          }
+          
+          const newImage: GeneratedImage = {
+            id: Date.now().toString(),
+            url: imageUrl,
+            prompt: prompt,
+            timestamp: Date.now()
+          };
+          setGeneratedImages(prev => [newImage, ...prev]);
+          incrementUsage();
+          toast.success("Image generated successfully!");
+          resolve();
         };
-        setGeneratedImages(prev => [newImage, ...prev]);
-        incrementUsage();
-        toast.success("Image generated successfully!");
-        setIsLoading(false);
-      };
-      img.onerror = () => {
-        if (abortControllerRef.current?.signal.aborted) return;
-        setError("Failed to load image. Please try again.");
-        toast.error("Failed to generate image");
-        setIsLoading(false);
-      };
-      img.src = imageUrl;
-    } catch (error) {
-      if (abortControllerRef.current?.signal.aborted) return;
-      console.error("Image generation error:", error);
-      setError("Failed to generate image. Please try again.");
-      toast.error("Failed to generate image");
+        
+        img.onerror = () => {
+          clearTimeout(timeoutId);
+          if (abortControllerRef.current?.signal.aborted) {
+            reject(new Error("Cancelled"));
+            return;
+          }
+          reject(new Error("Failed to load image. The service may be unavailable."));
+        };
+        
+        img.src = imageUrl;
+      });
+      
+      await imageLoadPromise;
+      setIsLoading(false);
+    } catch (error: any) {
+      if (abortControllerRef.current?.signal.aborted) {
+        toast.info("Generation cancelled");
+      } else {
+        console.error("Image generation error:", error);
+        const errorMessage = error.message || "Failed to generate image. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
       setIsLoading(false);
     }
   };
@@ -261,6 +287,8 @@ export function ImageGeneration() {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
+      <UsageLimitsDisplay type="image" currentUsage={usageCount} />
+      
       <Card className="shadow-lg border-2">
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-2xl">
