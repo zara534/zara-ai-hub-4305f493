@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ImageModelManager } from "./ImageModelManager";
 import { AdminMessaging } from "./AdminMessaging";
 import { RateLimitSettings } from "./RateLimitSettings";
-import { AdminLimitsManager } from "./AdminLimitsManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminPanel() {
@@ -276,7 +275,7 @@ export function AdminPanel() {
         </TabsContent>
 
         <TabsContent value="rate-limits" className="space-y-6 mt-6">
-          <AdminLimitsManager />
+          <RateLimitSettings />
         </TabsContent>
 
         <TabsContent value="announcements" className="space-y-6 mt-6">

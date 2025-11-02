@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AIModelRatings } from "@/components/AIModelRatings";
-import { UsageLimitsDisplay } from "@/components/UsageLimitsDisplay";
 
 interface Message {
   id: string;
@@ -262,8 +261,7 @@ export function TextGeneration() {
   };
 
   const handleShare = (content: string) => {
-    const shareText = `Chat with lots of AI models here!\nOn Zara AI Hub 🤠 and create images too\n\n${window.location.origin}`;
-    setShareContent(shareText);
+    setShareContent(content);
     setShareDialogOpen(true);
   };
 
@@ -323,8 +321,6 @@ export function TextGeneration() {
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
-      <UsageLimitsDisplay type="text" currentUsage={usageCount} />
-      
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
