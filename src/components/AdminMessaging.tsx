@@ -79,7 +79,6 @@ export function AdminMessaging() {
           title: title.trim(),
           content: content.trim(),
           created_by: user.id,
-          ai_model_name: "Admin",
         });
 
       if (error) throw error;
