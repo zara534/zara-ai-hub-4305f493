@@ -7,15 +7,13 @@ import { Bell, X, Heart, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AnnouncementComments } from "./AnnouncementComments";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Announcement {
   id: string;
   title: string;
   content: string;
   created_at: string;
-  likes: number;
-  user_liked: boolean;
+  likes?: number;
 }
 
 export function UserMessaging() {
@@ -23,151 +21,130 @@ export function UserMessaging() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [likedAnnouncements, setLikedAnnouncements] = useState<Set<string>>(new Set());
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadAnnouncements();
+    loadLikedAnnouncements();
     
-    // Subscribe to real-time updates for announcements
-    const announcementsChannel = supabase
-      .channel('announcements_changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'announcements' 
-      }, () => {
-        loadAnnouncements();
-        // Show notification for new announcements
-        if (!isOpen) {
+    // Listen for storage changes (when announcements are added)
+    const handleStorageChange = () => {
+      const newAnnouncements = JSON.parse(localStorage.getItem("announcements") || "[]");
+      const lastRead = localStorage.getItem("last_announcement_read");
+      
+      if (lastRead && newAnnouncements.length > 0) {
+        const newestAnnouncement = newAnnouncements[0];
+        if (new Date(newestAnnouncement.created_at) > new Date(lastRead)) {
           setUnreadCount(prev => prev + 1);
           toast.info("New announcement from Admin!");
         }
-      })
-      .subscribe();
+      }
+      
+      setAnnouncements(newAnnouncements);
+    };
 
-    // Subscribe to real-time updates for announcement likes
-    const likesChannel = supabase
-      .channel('announcement_likes_changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'announcement_likes' 
-      }, () => {
-        loadAnnouncements();
-      })
-      .subscribe();
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Poll every 3 seconds for updates
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem("announcements");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (JSON.stringify(parsed) !== JSON.stringify(announcements)) {
+          handleStorageChange();
+        }
+      }
+    }, 3000);
 
     return () => {
-      announcementsChannel.unsubscribe();
-      likesChannel.unsubscribe();
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
     };
-  }, [isOpen]);
+  }, [announcements]);
 
   const loadAnnouncements = async () => {
     try {
-      // Fetch announcements
-      const { data: announcementsData, error: announcementsError } = await supabase
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (announcementsError) throw announcementsError;
-
-      if (!announcementsData) {
-        setAnnouncements([]);
-        return;
-      }
-
-      // Fetch all likes counts
-      const { data: likesData, error: likesError } = await supabase
-        .from("announcement_likes")
-        .select("announcement_id, user_id");
-      
-      if (likesError) throw likesError;
-
-      // Count likes per announcement
-      const likeCounts: Record<string, number> = {};
-      const userLikes: Set<string> = new Set();
-      
-      if (likesData) {
-        likesData.forEach(like => {
-          likeCounts[like.announcement_id] = (likeCounts[like.announcement_id] || 0) + 1;
-          if (user && like.user_id === user.id) {
-            userLikes.add(like.announcement_id);
-          }
-        });
-      }
-
-      // Combine data
-      const formattedAnnouncements = announcementsData.map(ann => ({
-        id: ann.id,
-        title: ann.title,
-        content: ann.content,
-        created_at: ann.created_at,
-        likes: likeCounts[ann.id] || 0,
-        user_liked: userLikes.has(ann.id),
-      }));
-
-      setAnnouncements(formattedAnnouncements);
-
-      // Calculate unread count
-      const lastRead = localStorage.getItem("last_announcement_read");
-      if (lastRead && formattedAnnouncements.length > 0) {
-        const unread = formattedAnnouncements.filter(
-          a => new Date(a.created_at) > new Date(lastRead)
-        );
-        setUnreadCount(unread.length);
-      } else if (formattedAnnouncements.length > 0) {
-        setUnreadCount(formattedAnnouncements.length);
+      const stored = localStorage.getItem("announcements");
+      if (stored) {
+        const data = JSON.parse(stored);
+        
+        // Load like counts for each announcement
+        const likesKey = "announcement_likes_by_user";
+        const allLikes = JSON.parse(localStorage.getItem(likesKey) || "{}");
+        const dataWithLikes = data.map((ann: Announcement) => ({
+          ...ann,
+          likes: allLikes[ann.id]?.total || 0
+        }));
+        
+        setAnnouncements(dataWithLikes);
+        
+        // Check localStorage for last read timestamp
+        const lastRead = localStorage.getItem("last_announcement_read");
+        if (lastRead && data) {
+          const unread = data.filter((a: Announcement) => new Date(a.created_at) > new Date(lastRead));
+          setUnreadCount(unread.length);
+        } else if (data) {
+          setUnreadCount(data.length);
+        }
       }
     } catch (error: any) {
       console.error("Error loading announcements:", error);
-      toast.error("Failed to load announcements");
     }
   };
 
-  const handleLike = async (announcementId: string, currentlyLiked: boolean) => {
+  const loadLikedAnnouncements = () => {
+    if (!user) return;
+    const likesKey = "announcement_likes_by_user";
+    const allLikes = JSON.parse(localStorage.getItem(likesKey) || "{}");
+    const userLiked = new Set<string>();
+    
+    Object.entries(allLikes).forEach(([announcementId, data]: [string, any]) => {
+      if (data.users && data.users.includes(user.id)) {
+        userLiked.add(announcementId);
+      }
+    });
+    
+    setLikedAnnouncements(userLiked);
+  };
+
+  const handleLike = (announcementId: string) => {
     if (!user) {
       toast.error("Please log in to like announcements");
       return;
     }
 
-    try {
-      if (currentlyLiked) {
-        // Unlike
-        const { error } = await supabase
-          .from("announcement_likes")
-          .delete()
-          .eq("announcement_id", announcementId)
-          .eq("user_id", user.id);
-        
-        if (error) throw error;
-      } else {
-        // Like
-        const { error } = await supabase
-          .from("announcement_likes")
-          .insert({
-            announcement_id: announcementId,
-            user_id: user.id,
-          });
-        
-        if (error) throw error;
-      }
+    const likesKey = "announcement_likes_by_user";
+    const allLikes = JSON.parse(localStorage.getItem(likesKey) || "{}");
+    const announcementLikes = allLikes[announcementId] || { total: 0, users: [] };
+    
+    const newLiked = new Set(likedAnnouncements);
+    const hasLiked = newLiked.has(announcementId);
+    
+    let newTotal = announcementLikes.total;
+    let newUsers = [...announcementLikes.users];
 
-      // Update local state immediately for better UX
-      setAnnouncements(announcements.map(ann => 
-        ann.id === announcementId 
-          ? { 
-              ...ann, 
-              likes: currentlyLiked ? ann.likes - 1 : ann.likes + 1,
-              user_liked: !currentlyLiked 
-            }
-          : ann
-      ));
-    } catch (error: any) {
-      console.error("Error toggling like:", error);
-      toast.error("Failed to update like");
+    if (!hasLiked) {
+      if (!newUsers.includes(user.id)) {
+        newUsers.push(user.id);
+        newTotal++;
+        newLiked.add(announcementId);
+      }
+    } else {
+      newUsers = newUsers.filter(id => id !== user.id);
+      newTotal = Math.max(0, newTotal - 1);
+      newLiked.delete(announcementId);
     }
+
+    allLikes[announcementId] = { total: newTotal, users: newUsers };
+    localStorage.setItem(likesKey, JSON.stringify(allLikes));
+    setLikedAnnouncements(newLiked);
+
+    // Update announcement display
+    const updatedAnnouncements = announcements.map(ann => 
+      ann.id === announcementId ? { ...ann, likes: newTotal } : ann
+    );
+    setAnnouncements(updatedAnnouncements);
   };
 
   const toggleComments = (announcementId: string) => {
@@ -253,16 +230,16 @@ export function UserMessaging() {
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2"
-                            onClick={() => handleLike(announcement.id, announcement.user_liked)}
+                            onClick={() => handleLike(announcement.id)}
                           >
                             <Heart 
                               className={`w-4 h-4 mr-1 transition-all ${
-                                announcement.user_liked
+                                likedAnnouncements.has(announcement.id) 
                                   ? 'fill-primary text-primary' 
                                   : 'hover:text-primary'
                               }`} 
                             />
-                            <span className="text-xs">{announcement.likes}</span>
+                            <span className="text-xs">{announcement.likes || 0}</span>
                           </Button>
                           <Button
                             variant="ghost"
