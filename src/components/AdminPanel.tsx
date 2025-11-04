@@ -9,7 +9,7 @@ import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageModelManager } from "./ImageModelManager";
-import { AdminMessaging } from "./AdminMessaging";
+import { BroadcastMessage } from "./BroadcastMessage";
 import { RateLimitSettings } from "./RateLimitSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -108,7 +108,7 @@ export function AdminPanel() {
             <TabsTrigger value="text-models">Text AI</TabsTrigger>
             <TabsTrigger value="image-models">Image AI</TabsTrigger>
             <TabsTrigger value="rate-limits">Rate Limits</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
           </TabsList>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
@@ -278,8 +278,8 @@ export function AdminPanel() {
           <RateLimitSettings />
         </TabsContent>
 
-        <TabsContent value="announcements" className="space-y-6 mt-6">
-          <AdminMessaging />
+        <TabsContent value="broadcast" className="space-y-6 mt-6">
+          <BroadcastMessage />
         </TabsContent>
       </Tabs>
     </div>

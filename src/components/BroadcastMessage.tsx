@@ -1,83 +1,100 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function BroadcastMessage() {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendBroadcast = async () => {
-    if (!title.trim() || !content.trim()) {
-      toast.error("Please fill in both title and message");
-      return;
-    }
+  useEffect(() => {
+    loadBroadcast();
+  }, []);
 
-    if (!user) {
-      toast.error("You must be logged in");
-      return;
-    }
-
-    setLoading(true);
+  const loadBroadcast = async () => {
     try {
-      const { error } = await supabase
-        .from("announcements")
-        .insert({
-          title: title.trim(),
-          content: content.trim(),
-          created_by: user.id,
-          ai_model_name: "Admin",
-        });
+      const { data, error } = await supabase
+        .from("broadcast_message")
+        .select("message")
+        .single();
 
-      if (error) {
-        console.error("Broadcast error details:", error);
-        toast.error(`Failed to send: ${error.message}`);
-        setLoading(false);
-        return;
-      }
-
-      toast.success("Broadcast message sent to all users!");
-      setTitle("");
-      setContent("");
-    } catch (error: any) {
-      console.error("Error sending broadcast:", error);
-      toast.error(`Failed to send broadcast: ${error?.message || "Unknown error"}`);
-    } finally {
-      setLoading(false);
+      if (error && error.code !== "PGRST116") throw error;
+      if (data) setMessage(data.message || "");
+    } catch (error) {
+      console.error("Error loading broadcast:", error);
     }
   };
 
+  const saveBroadcast = async () => {
+    if (!isAdmin) return;
+    
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("broadcast_message")
+        .upsert({ id: 1, message: message.trim() });
+
+      if (error) throw error;
+      toast.success("Broadcast message updated!");
+    } catch (error) {
+      console.error("Error saving broadcast:", error);
+      toast.error("Failed to save message");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearBroadcast = async () => {
+    if (!isAdmin) return;
+    
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("broadcast_message")
+        .upsert({ id: 1, message: "" });
+
+      if (error) throw error;
+      setMessage("");
+      toast.success("Broadcast message cleared!");
+    } catch (error) {
+      console.error("Error clearing broadcast:", error);
+      toast.error("Failed to clear message");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isAdmin) return null;
+
   return (
     <Card className="shadow-lg border-2">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
-          <Send className="w-5 h-5 md:w-6 md:h-6" />
-          Broadcast Message to All Users
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Input
-          placeholder="Message Title *"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+      <CardContent className="pt-6 space-y-4">
+        <h3 className="font-bold text-lg">Broadcast Message</h3>
+        <p className="text-sm text-muted-foreground">
+          Set a message that all users will see when they visit the app
+        </p>
         <Textarea
-          placeholder="Message Content *"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+          placeholder="Enter your broadcast message..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           className="min-h-32"
         />
-        <Button onClick={handleSendBroadcast} className="w-full" size="lg" disabled={loading}>
-          <Send className="w-5 h-5 mr-2" />
-          {loading ? "Sending..." : "Send Broadcast"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={saveBroadcast} disabled={isLoading} className="flex-1">
+            Save Broadcast
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={clearBroadcast} 
+            disabled={isLoading}
+          >
+            Clear
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

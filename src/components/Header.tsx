@@ -1,4 +1,4 @@
-import { Settings, Home, Lock, Menu, LogOut, Bell } from "lucide-react";
+import { Settings, Home, Lock, Menu, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { useState } from "react";
@@ -7,15 +7,13 @@ import { useApp } from "@/contexts/AppContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ProfileManager } from "./ProfileManager";
-import { UserMessaging } from "./UserMessaging";
 
 interface HeaderProps {
   currentView: "home" | "admin" | "settings";
   onViewChange: (view: "home" | "admin" | "settings") => void;
-  showMessaging?: boolean;
 }
 
-export function Header({ currentView, onViewChange, showMessaging = true }: HeaderProps) {
+export function Header({ currentView, onViewChange }: HeaderProps) {
   const { logout } = useAuth();
   const { isAdmin } = useApp();
   const navigate = useNavigate();
@@ -90,17 +88,12 @@ export function Header({ currentView, onViewChange, showMessaging = true }: Head
           </Sheet>
           
           {/* Centered Title */}
-          <div className="flex-1 flex items-center justify-center gap-3">
+          <div className="flex-1 flex items-center justify-center">
             <h1 className="text-3xl md:text-5xl font-black tracking-tight whitespace-nowrap">
               <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
                 ZAH
               </span>
             </h1>
-            {showMessaging && (
-              <div className="hidden sm:block">
-                <UserMessaging />
-              </div>
-            )}
           </div>
           
           {/* Desktop Navigation */}
@@ -143,9 +136,6 @@ export function Header({ currentView, onViewChange, showMessaging = true }: Head
 
           {/* Mobile Quick Access */}
           <div className="md:hidden flex items-center gap-2">
-            <div className="sm:hidden">
-              {showMessaging && <UserMessaging />}
-            </div>
             <Button
               variant="ghost"
               size="icon"
