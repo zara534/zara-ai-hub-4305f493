@@ -266,7 +266,7 @@ export function TextGeneration() {
   };
 
   const shareToSocial = (platform: string) => {
-    const text = `Chat with AI Text and Create Images Generators here\n\nhttps://zara-ai-hub.lovable.app`;
+    const text = `🚀 Discover ZARA AI Hub - Your Ultimate AI Playground!\n\nExperience the power of 30+ AI models for text generation and stunning image creation, all in one place. From creative writing to professional design, ZARA AI Hub makes AI accessible to everyone!\n\n✨ Try it now: https://zara-ai-hub.lovable.app`;
     let shareUrl = "";
 
     switch (platform) {
