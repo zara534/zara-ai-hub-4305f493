@@ -266,34 +266,33 @@ export function TextGeneration() {
   };
 
   const shareToSocial = (platform: string) => {
-    const text = `Chat with lots of AI models here!\n\n"${shareContent}"\n\n`;
-    const url = window.location.href;
+    const text = `Chat with AI Text and Create Images Generators here\n\nhttps://zara-ai-hub.lovable.app`;
     let shareUrl = "";
 
     switch (platform) {
       case "whatsapp":
-        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + url)}`;
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         break;
       case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://zara-ai-hub.lovable.app")}&quote=${encodeURIComponent(text)}`;
         break;
       case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
         break;
       case "linkedin":
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://zara-ai-hub.lovable.app")}`;
         break;
       case "tiktok":
         toast.info("Please copy the text and share manually on TikTok");
-        navigator.clipboard.writeText(text + url);
+        navigator.clipboard.writeText(text);
         return;
       case "instagram":
         toast.info("Please copy the text and share manually on Instagram");
-        navigator.clipboard.writeText(text + url);
+        navigator.clipboard.writeText(text);
         return;
       case "youtube":
         toast.info("Please copy the text and share manually on YouTube");
-        navigator.clipboard.writeText(text + url);
+        navigator.clipboard.writeText(text);
         return;
     }
 

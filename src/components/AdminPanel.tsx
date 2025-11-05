@@ -9,7 +9,7 @@ import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageModelManager } from "./ImageModelManager";
-import { BroadcastMessage } from "./BroadcastMessage";
+
 import { RateLimitSettings } from "./RateLimitSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -104,11 +104,10 @@ export function AdminPanel() {
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
         <Tabs defaultValue="text-models" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="text-models">Text AI</TabsTrigger>
             <TabsTrigger value="image-models">Image AI</TabsTrigger>
             <TabsTrigger value="rate-limits">Rate Limits</TabsTrigger>
-            <TabsTrigger value="broadcast">Broadcast</TabsTrigger>
           </TabsList>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
@@ -276,10 +275,6 @@ export function AdminPanel() {
 
         <TabsContent value="rate-limits" className="space-y-6 mt-6">
           <RateLimitSettings />
-        </TabsContent>
-
-        <TabsContent value="broadcast" className="space-y-6 mt-6">
-          <BroadcastMessage />
         </TabsContent>
       </Tabs>
     </div>

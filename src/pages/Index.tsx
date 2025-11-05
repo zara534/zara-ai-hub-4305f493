@@ -6,7 +6,7 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { AdminLogin } from "@/components/AdminLogin";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { Header } from "@/components/Header";
-import { BroadcastViewer } from "@/components/BroadcastViewer";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,7 +39,6 @@ const Index = () => {
       <main className="container mx-auto py-4 md:py-8 px-0 md:px-4">
         {currentView === "home" && (
           <>
-            <BroadcastViewer />
             <Tabs defaultValue="text" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="text">Text Generation</TabsTrigger>
