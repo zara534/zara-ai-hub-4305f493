@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw, ThumbsDown, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -316,6 +316,20 @@ export function TextGeneration() {
     }
   };
 
+  const handleLikeFeedback = () => {
+    const email = "mgbeahuruchizaram336@gmail.com";
+    const subject = encodeURIComponent("ZARA AI Hub - What I Liked");
+    const body = encodeURIComponent("Hi! I wanted to share what I liked about ZARA AI Hub:\n\n");
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
+  };
+
+  const handleDislikeFeedback = () => {
+    const email = "mgbeahuruchizaram336@gmail.com";
+    const subject = encodeURIComponent("ZARA AI Hub - Issue Report");
+    const body = encodeURIComponent("Hi! I encountered an issue with ZARA AI Hub:\n\nIssue Description:\n\n");
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
+  };
+
   const selectedModelData = aiModels.find((m) => m.id === selectedModel);
 
   return (
@@ -379,78 +393,114 @@ export function TextGeneration() {
                 </p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  {message.role === "assistant" && (
+              <>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {message.role === "assistant" && (
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 border-2 border-primary/20">
+                        <span className="text-base md:text-lg font-bold text-primary">
+                          {selectedModelData?.name.charAt(0).toUpperCase() || "Z"}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[75%]">
+                      <div
+                        className={`rounded-2xl px-3 py-2 md:px-5 md:py-3 ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground shadow-md"
+                            : "bg-muted/50"
+                        }`}
+                      >
+                        <p className="text-xs md:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                          {message.content || (message.role === "assistant" && isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : message.content)}
+                        </p>
+                      </div>
+                      {message.content && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(message.content, message.id)}
+                            className="h-7 px-2"
+                          >
+                            {copiedId === message.id ? (
+                              <Check className="w-3 h-3 text-green-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleShare(message.content)}
+                            className="h-7 px-2"
+                          >
+                            <Share2 className="w-3 h-3" />
+                          </Button>
+                          {message.role === "assistant" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRegenerate(message.id)}
+                                className="h-7 px-2"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleLikeFeedback}
+                                className="h-7 px-2 hover:text-red-500"
+                              >
+                                <Heart className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleDislikeFeedback}
+                                className="h-7 px-2 hover:text-yellow-500"
+                              >
+                                <ThumbsDown className="w-3 h-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {message.role === "user" && (
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
+                        <span className="text-base md:text-lg font-bold text-primary-foreground">
+                          {username ? username.charAt(0).toUpperCase() : "U"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && messages.length > 0 && messages[messages.length - 1].role === "user" && (
+                  <div className="flex gap-3 justify-start">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 border-2 border-primary/20">
                       <span className="text-base md:text-lg font-bold text-primary">
                         {selectedModelData?.name.charAt(0).toUpperCase() || "Z"}
                       </span>
                     </div>
-                  )}
-                  <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[75%]">
-                    <div
-                      className={`rounded-2xl px-3 py-2 md:px-5 md:py-3 ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "bg-muted/50"
-                      }`}
-                    >
-                      <p className="text-xs md:text-sm leading-relaxed whitespace-pre-wrap break-words">
-                        {message.content || (message.role === "assistant" && isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : message.content)}
-                      </p>
-                    </div>
-                    {message.content && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopy(message.content, message.id)}
-                          className="h-7 px-2"
-                        >
-                          {copiedId === message.id ? (
-                            <Check className="w-3 h-3 text-green-500" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleShare(message.content)}
-                          className="h-7 px-2"
-                        >
-                          <Share2 className="w-3 h-3" />
-                        </Button>
-                        {message.role === "assistant" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRegenerate(message.id)}
-                            className="h-7 px-2"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                          </Button>
-                        )}
+                    <div className="rounded-2xl px-3 py-2 md:px-5 md:py-3 bg-muted/50">
+                      <div className="flex gap-1">
+                        <span className="animate-bounce inline-block" style={{ animationDelay: "0ms" }}>.</span>
+                        <span className="animate-bounce inline-block" style={{ animationDelay: "150ms" }}>.</span>
+                        <span className="animate-bounce inline-block" style={{ animationDelay: "300ms" }}>.</span>
                       </div>
-                    )}
-                  </div>
-                  {message.role === "user" && (
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-md">
-                      <span className="text-base md:text-lg font-bold text-primary-foreground">
-                        {username ? username.charAt(0).toUpperCase() : "U"}
-                      </span>
                     </div>
-                  )}
-                </div>
-              ))
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
