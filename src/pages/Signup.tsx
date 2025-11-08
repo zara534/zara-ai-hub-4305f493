@@ -20,8 +20,8 @@ export function Signup() {
   const validatePassword = (pwd: string): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
-    if (pwd.length < 8) {
-      errors.push("at least 8 characters");
+    if (pwd.length < 6) {
+      errors.push("at least 6 characters");
     }
     if (!/[A-Z]/.test(pwd)) {
       errors.push("one uppercase letter");
@@ -155,7 +155,7 @@ export function Signup() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Must contain: uppercase, lowercase, number, min 8 characters
+                  Must contain: uppercase, lowercase, number, min 6 characters
                 </p>
               </div>
 

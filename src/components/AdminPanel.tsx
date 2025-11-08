@@ -3,18 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, Edit2, Save, X } from "lucide-react";
+import { Trash2, Plus, Edit2, Save, X, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageModelManager } from "./ImageModelManager";
-
-import { RateLimitSettings } from "./RateLimitSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminPanel() {
-  const { aiModels, addAIModel, removeAIModel } = useApp();
+  const { aiModels, addAIModel, removeAIModel, imageModels } = useApp();
   const { user } = useAuth();
   const [name, setName] = useState("");
   const [behavior, setBehavior] = useState("");
@@ -101,14 +99,81 @@ export function AdminPanel() {
     handleCancelEdit();
   };
 
+  const handleDownloadModels = () => {
+    const data = {
+      aiModels,
+      imageModels,
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-models-backup-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success("Models downloaded successfully!");
+  };
+
+  const handleUploadModels = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        
+        if (data.aiModels) {
+          localStorage.setItem("ai-models", JSON.stringify(data.aiModels));
+        }
+        if (data.imageModels) {
+          localStorage.setItem("image-models", JSON.stringify(data.imageModels));
+        }
+        
+        toast.success("Models uploaded successfully! Refreshing page...");
+        setTimeout(() => window.location.reload(), 1000);
+      } catch (error) {
+        toast.error("Invalid JSON file. Please upload a valid backup file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
-        <Tabs defaultValue="text-models" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="text-models">Text AI</TabsTrigger>
-            <TabsTrigger value="image-models">Image AI</TabsTrigger>
-            <TabsTrigger value="rate-limits">Rate Limits</TabsTrigger>
-          </TabsList>
+      <Card className="shadow-lg border-2">
+        <CardHeader>
+          <CardTitle className="text-xl md:text-2xl">Backup & Restore</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={handleDownloadModels} className="flex-1">
+            <Download className="w-4 h-4 mr-2" />
+            Download All Models (JSON)
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={() => document.getElementById('upload-input')?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Models (JSON)
+          </Button>
+          <input
+            id="upload-input"
+            type="file"
+            accept=".json"
+            onChange={handleUploadModels}
+            className="hidden"
+          />
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="text-models" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="text-models">Text AI</TabsTrigger>
+          <TabsTrigger value="image-models">Image AI</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
       {/* Add AI Agent Card */}
@@ -271,10 +336,6 @@ export function AdminPanel() {
 
         <TabsContent value="image-models" className="space-y-6 mt-6">
           <ImageModelManager />
-        </TabsContent>
-
-        <TabsContent value="rate-limits" className="space-y-6 mt-6">
-          <RateLimitSettings />
         </TabsContent>
       </Tabs>
     </div>
