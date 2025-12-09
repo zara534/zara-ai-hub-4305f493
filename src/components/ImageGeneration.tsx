@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { AIModelRatings } from "./AIModelRatings";
+
 
 interface ImageModel {
   id: string;
@@ -271,11 +271,10 @@ export function ImageGeneration() {
     <div className="space-y-4 max-w-5xl mx-auto">
       <Card className="shadow-lg border-2">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between text-2xl">
+          <CardTitle className="text-2xl">
             <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
               ZARA AI HUB
             </span>
-            <AIModelRatings modelId={selectedModel} modelType="image" />
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-2">
             {selectedModelData?.description || "Generate stunning images with AI"}
