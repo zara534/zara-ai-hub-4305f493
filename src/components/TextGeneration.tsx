@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AIModelRatings } from "@/components/AIModelRatings";
+
 
 interface Message {
   id: string;
@@ -357,7 +357,6 @@ export function TextGeneration() {
                   ))}
                 </SelectContent>
               </Select>
-              <AIModelRatings modelId={selectedModel} modelType="text" />
             </div>
             <div className="flex items-center gap-2">
               {messages.length > 0 && (
