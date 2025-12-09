@@ -177,14 +177,22 @@ export function ImageGeneration() {
 
     try {
       const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
-      const fullPrompt = model.systemPrompt 
+      
+      // Enhanced quality prompt for better human/image generation
+      const qualityEnhancers = "ultra high quality, 8K resolution, highly detailed, sharp focus, professional photography, perfect lighting, masterpiece, best quality, extremely detailed face, perfect anatomy, photorealistic";
+      
+      const basePrompt = model.systemPrompt 
         ? `${model.systemPrompt} ${prompt}` 
         : prompt;
+      
+      // Add quality enhancers to the prompt
+      const fullPrompt = `${basePrompt}, ${qualityEnhancers}`;
+      
       const encodedPrompt = encodeURIComponent(fullPrompt);
-      const modelType = model.modelType || selectedModel;
+      const modelType = model.modelType || "flux-realism";
       const seed = Date.now();
       const { width, height } = getImageDimensions(aspectRatio);
-      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=${width}&height=${height}&seed=${seed}`;
+      const imageUrl = `${model.apiEndpoint}/${encodedPrompt}?model=${modelType}&nologo=true&width=${width}&height=${height}&seed=${seed}&enhance=true`;
       
       // Test if image loads successfully
       const img = new Image();
