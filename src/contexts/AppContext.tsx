@@ -9,6 +9,7 @@ export interface AIModel {
   emoji: string;
   systemPrompt?: string;
   description?: string;
+  provider?: string; // openai, gemini, deepseek, mistral, etc.
 }
 
 export interface ImageModel {
@@ -116,6 +117,15 @@ const DEFAULT_MODELS: AIModel[] = [
   { id: "58", name: "Bartender", behavior: "Cocktail recipes and mixing", emoji: "🍹", systemPrompt: "You are a professional bartender.", description: "Cocktail and mixology expert" },
   { id: "59", name: "Event Planner", behavior: "Event organization and planning", emoji: "🎉", systemPrompt: "You are an event planning expert.", description: "Event planning specialist" },
   { id: "60", name: "Astrologer", behavior: "Horoscopes and astrological readings", emoji: "♈", systemPrompt: "You are an astrology expert.", description: "Astrology and horoscope specialist" },
+  // New AI Provider Models
+  { id: "61", name: "Gemini Flash", behavior: "Fast and intelligent responses using Google Gemini", emoji: "✨", systemPrompt: "You are a helpful AI assistant powered by Google Gemini.", description: "Google Gemini 2.5 Flash - Fast AI", provider: "gemini" },
+  { id: "62", name: "Gemini Search", behavior: "AI with Google Search integration for real-time info", emoji: "🔍", systemPrompt: "You are a helpful AI assistant with access to Google Search.", description: "Gemini with Google Search", provider: "gemini-search" },
+  { id: "63", name: "DeepSeek V3", behavior: "Advanced reasoning and analysis capabilities", emoji: "🧠", systemPrompt: "You are DeepSeek, an advanced reasoning AI.", description: "DeepSeek V3.1 - Reasoning AI", provider: "deepseek" },
+  { id: "64", name: "Mistral AI", behavior: "Powerful open-source AI model", emoji: "🌪️", systemPrompt: "You are Mistral, a helpful AI assistant.", description: "Mistral Small 3.2 24B", provider: "mistral" },
+  { id: "65", name: "GPT-5 Nano", behavior: "Fast OpenAI model with vision capabilities", emoji: "⚡", systemPrompt: "You are a helpful AI assistant.", description: "OpenAI GPT-5 Nano - Fast", provider: "openai-fast" },
+  { id: "66", name: "Qwen Coder", behavior: "Specialized in coding and programming", emoji: "👨‍💻", systemPrompt: "You are Qwen Coder, an expert programming assistant.", description: "Qwen 2.5 Coder 32B", provider: "qwen-coder" },
+  { id: "67", name: "Llama Fast", behavior: "Quick responses using Meta's Llama", emoji: "🦙", systemPrompt: "You are a helpful AI assistant.", description: "Llama 3.1 8B - Fast responses", provider: "roblox-rp" },
+  { id: "68", name: "OpenAI Reasoning", behavior: "Advanced reasoning with o4 Mini", emoji: "🎯", systemPrompt: "You are an AI that thinks step by step.", description: "OpenAI o4 Mini - Reasoning", provider: "openai-reasoning" },
 ];
 
 const DEFAULT_IMAGE_MODELS: ImageModel[] = [

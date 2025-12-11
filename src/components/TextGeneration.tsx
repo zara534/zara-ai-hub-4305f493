@@ -161,8 +161,16 @@ export function TextGeneration() {
         { role: "user", content: userMessage.content }
       ];
       
+      // Check if model has a specific provider (gemini, deepseek, etc.)
+      const modelProvider = selectedModelData?.provider || "openai";
+      const apiEndpoint = modelProvider === "gemini" 
+        ? "https://text.pollinations.ai/openai"
+        : modelProvider === "deepseek"
+        ? "https://text.pollinations.ai/openai"
+        : "https://text.pollinations.ai/openai";
+      
       const response = await fetch(
-        "https://text.pollinations.ai/openai",
+        apiEndpoint,
         {
           method: "POST",
           headers: {
@@ -170,7 +178,7 @@ export function TextGeneration() {
           },
           body: JSON.stringify({
             messages: conversationMessages,
-            model: "openai",
+            model: modelProvider,
             stream: false
           }),
           signal: abortControllerRef.current.signal
