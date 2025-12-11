@@ -228,15 +228,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const models = data.map((model) => ({
+        const dbModels = data.map((model) => ({
           id: model.id,
           name: model.name,
           behavior: model.behavior,
           emoji: model.emoji,
           systemPrompt: model.system_prompt,
           description: model.description,
+          provider: model.provider || "openai",
         }));
-        setAIModels(models);
+        
+        // Get the new provider-based models from defaults (IDs 61-68)
+        const providerModels = DEFAULT_MODELS.filter(m => parseInt(m.id) >= 61);
+        
+        // Check which provider models are not already in the database
+        const existingNames = dbModels.map(m => m.name.toLowerCase());
+        const newProviderModels = providerModels.filter(
+          m => !existingNames.includes(m.name.toLowerCase())
+        );
+        
+        // Merge database models with new provider models
+        setAIModels([...dbModels, ...newProviderModels]);
       }
     } catch (error: any) {
       console.error("Error loading AI models:", error);
