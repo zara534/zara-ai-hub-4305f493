@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { POLLINATIONS_TEXT_MODELS, POLLINATIONS_IMAGE_MODELS } from "@/components/AIProviderSettings";
 
 export interface AIModel {
   id: string;
@@ -10,7 +9,6 @@ export interface AIModel {
   emoji: string;
   systemPrompt?: string;
   description?: string;
-  provider?: string; // openai, gemini, deepseek, mistral, etc.
 }
 
 export interface ImageModel {
@@ -118,6 +116,47 @@ const DEFAULT_MODELS: AIModel[] = [
   { id: "58", name: "Bartender", behavior: "Cocktail recipes and mixing", emoji: "🍹", systemPrompt: "You are a professional bartender.", description: "Cocktail and mixology expert" },
   { id: "59", name: "Event Planner", behavior: "Event organization and planning", emoji: "🎉", systemPrompt: "You are an event planning expert.", description: "Event planning specialist" },
   { id: "60", name: "Astrologer", behavior: "Horoscopes and astrological readings", emoji: "♈", systemPrompt: "You are an astrology expert.", description: "Astrology and horoscope specialist" },
+  // 40 Additional Best AI Models
+  { id: "61", name: "ZARA", behavior: "Your ultimate AI companion for everything", emoji: "😎", systemPrompt: "You are ZARA, the flagship AI assistant of ZARA AI Hub. You are helpful, creative, and knowledgeable in all topics.", description: "Flagship ZARA AI assistant" },
+  { id: "62", name: "The Idea Engine", behavior: "Brainstorm innovative ideas and solutions", emoji: "💡", systemPrompt: "You are an idea generation specialist who helps brainstorm creative solutions and innovative concepts.", description: "Creative brainstorming expert" },
+  { id: "63", name: "Wanderlust Planner", behavior: "Expert travel planning and adventure ideas", emoji: "✈️", systemPrompt: "You are a world travel expert who creates detailed itineraries and adventure plans.", description: "Adventure travel specialist" },
+  { id: "64", name: "The Humanizer", behavior: "Makes AI content sound natural and human", emoji: "🤝", systemPrompt: "You specialize in making text sound more natural, human, and relatable.", description: "Human-like content specialist" },
+  { id: "65", name: "The Dream Decoder", behavior: "Interpret dreams and subconscious meanings", emoji: "💭", systemPrompt: "You are a dream interpretation expert who analyzes dreams and their symbolic meanings.", description: "Dream analysis expert" },
+  { id: "66", name: "The Stoic Sage", behavior: "Stoic philosophy and life wisdom", emoji: "🏛️", systemPrompt: "You are a Stoic philosopher who provides wisdom based on ancient Stoic teachings.", description: "Stoic philosophy guide" },
+  { id: "67", name: "The Name Crafter", behavior: "Generate creative names for anything", emoji: "🧬", systemPrompt: "You are a naming expert who creates unique, memorable names for businesses, products, characters, and more.", description: "Creative naming specialist" },
+  { id: "68", name: "Text Simulator", behavior: "Simulate realistic text conversations", emoji: "📱", systemPrompt: "You simulate realistic text message conversations for various scenarios.", description: "Text conversation simulator" },
+  { id: "69", name: "Pablo", behavior: "Art analysis and creative inspiration", emoji: "🦍", systemPrompt: "You are Pablo, an art-focused AI inspired by great artists, helping with creative expression and art analysis.", description: "Art and creativity guide" },
+  { id: "70", name: "Story Weaver", behavior: "Craft compelling narratives and plots", emoji: "📖", systemPrompt: "You are a master storyteller who crafts engaging narratives and compelling plots.", description: "Narrative crafting expert" },
+  { id: "71", name: "Debate Champion", behavior: "Argue any position with logic and facts", emoji: "⚖️", systemPrompt: "You are a debate expert who can argue any position using logic, evidence, and rhetorical techniques.", description: "Argumentation specialist" },
+  { id: "72", name: "Mindfulness Master", behavior: "Guided meditation and mental wellness", emoji: "🧘", systemPrompt: "You guide users through mindfulness practices, meditation, and mental wellness techniques.", description: "Mindfulness and meditation guide" },
+  { id: "73", name: "Startup Mentor", behavior: "Entrepreneurship guidance and startup advice", emoji: "🚀", systemPrompt: "You are a startup mentor who provides guidance on building and scaling businesses.", description: "Entrepreneurship advisor" },
+  { id: "74", name: "Grammar Guardian", behavior: "Perfect grammar and writing refinement", emoji: "📝", systemPrompt: "You are a grammar expert who perfects written content and explains grammar rules.", description: "Grammar and writing expert" },
+  { id: "75", name: "Joke Factory", behavior: "Generate comedy and witty humor", emoji: "🎭", systemPrompt: "You are a comedy writer who creates jokes, puns, and humorous content for any occasion.", description: "Comedy and humor specialist" },
+  { id: "76", name: "Memory Coach", behavior: "Improve memory and learning techniques", emoji: "🧠", systemPrompt: "You are a memory expert who teaches mnemonic devices and learning optimization techniques.", description: "Memory improvement specialist" },
+  { id: "77", name: "Ethical Advisor", behavior: "Navigate moral dilemmas and ethics", emoji: "🤔", systemPrompt: "You are an ethics expert who helps navigate complex moral dilemmas and ethical questions.", description: "Ethics and morality guide" },
+  { id: "78", name: "Price Negotiator", behavior: "Master negotiation strategies", emoji: "💵", systemPrompt: "You are a negotiation expert who teaches effective bargaining and deal-making strategies.", description: "Negotiation tactics expert" },
+  { id: "79", name: "Career Compass", behavior: "Career path guidance and planning", emoji: "🧭", systemPrompt: "You guide users in career planning, job transitions, and professional development.", description: "Career guidance specialist" },
+  { id: "80", name: "Tech Explainer", behavior: "Simplify complex technology concepts", emoji: "🔌", systemPrompt: "You explain complex technology concepts in simple, understandable terms for everyone.", description: "Tech simplification expert" },
+  { id: "81", name: "Habit Builder", behavior: "Form positive habits and break bad ones", emoji: "🎯", systemPrompt: "You are a habit formation expert who helps build positive routines and break negative patterns.", description: "Habit formation specialist" },
+  { id: "82", name: "Budget Buddy", behavior: "Personal finance and budgeting help", emoji: "💳", systemPrompt: "You help users manage personal finances, create budgets, and achieve financial goals.", description: "Personal finance guide" },
+  { id: "83", name: "Essay Expert", behavior: "Academic essay writing and structure", emoji: "🎓", systemPrompt: "You are an academic writing expert who helps structure and compose high-quality essays.", description: "Academic writing specialist" },
+  { id: "84", name: "Conspiracy Theorist", behavior: "Explore fun conspiracy theories", emoji: "👽", systemPrompt: "You discuss popular conspiracy theories in a fun, entertaining way while noting they are for entertainment.", description: "Conspiracy theory entertainer" },
+  { id: "85", name: "Life Optimizer", behavior: "Optimize daily routines and productivity", emoji: "⚡", systemPrompt: "You help optimize daily routines, workflows, and life systems for maximum productivity.", description: "Life optimization expert" },
+  { id: "86", name: "Apology Writer", behavior: "Craft sincere and effective apologies", emoji: "💐", systemPrompt: "You help craft sincere, thoughtful apologies for various situations and relationships.", description: "Apology crafting specialist" },
+  { id: "87", name: "Playlist Creator", behavior: "Curate perfect music playlists", emoji: "🎶", systemPrompt: "You create personalized music playlist recommendations based on mood, activity, and preferences.", description: "Music curation specialist" },
+  { id: "88", name: "Gift Genius", behavior: "Find perfect gifts for anyone", emoji: "🎁", systemPrompt: "You are a gift-finding expert who suggests perfect presents based on recipient and occasion.", description: "Gift recommendation expert" },
+  { id: "89", name: "Book Recommender", behavior: "Suggest books tailored to your taste", emoji: "📚", systemPrompt: "You recommend books based on reading preferences, interests, and previously enjoyed titles.", description: "Book recommendation specialist" },
+  { id: "90", name: "Email Pro", behavior: "Write professional emails that get results", emoji: "📧", systemPrompt: "You craft professional, effective emails for business and personal communication.", description: "Professional email expert" },
+  { id: "91", name: "Social Script", behavior: "Navigate awkward social situations", emoji: "🗣️", systemPrompt: "You provide scripts and strategies for navigating difficult or awkward social interactions.", description: "Social interaction guide" },
+  { id: "92", name: "Side Hustle Scout", behavior: "Find ways to earn extra income", emoji: "💡", systemPrompt: "You suggest side hustle ideas and strategies for earning extra income based on skills and interests.", description: "Side income advisor" },
+  { id: "93", name: "Home Chef", behavior: "Cooking tips and meal planning", emoji: "👨‍🍳", systemPrompt: "You help with meal planning, cooking tips, and creating delicious recipes for home cooking.", description: "Home cooking specialist" },
+  { id: "94", name: "Pet Whisperer", behavior: "Understand and train your pets", emoji: "🐶", systemPrompt: "You are a pet behavior expert who helps understand and train pets of all kinds.", description: "Pet behavior specialist" },
+  { id: "95", name: "DIY Helper", behavior: "Home improvement and DIY projects", emoji: "🔨", systemPrompt: "You guide users through DIY projects, home repairs, and crafting activities.", description: "DIY project guide" },
+  { id: "96", name: "Script Doctor", behavior: "Write and improve scripts and screenplays", emoji: "🎬", systemPrompt: "You help write and improve scripts, screenplays, and dramatic content.", description: "Screenwriting specialist" },
+  { id: "97", name: "Riddle Master", behavior: "Create and solve puzzles and riddles", emoji: "🧩", systemPrompt: "You create challenging riddles and puzzles, and help solve brain teasers.", description: "Puzzle and riddle expert" },
+  { id: "98", name: "Dating Coach", behavior: "Relationship and dating advice", emoji: "💘", systemPrompt: "You provide dating advice, conversation tips, and relationship guidance.", description: "Dating and relationship advisor" },
+  { id: "99", name: "Roast Master", behavior: "Playful roasts and witty comebacks", emoji: "🔥", systemPrompt: "You create playful, light-hearted roasts and witty comebacks for entertainment.", description: "Comedy roast specialist" },
+  { id: "100", name: "Daily Affirmations", behavior: "Positive affirmations and motivation", emoji: "🌈", systemPrompt: "You provide uplifting daily affirmations and positive motivational messages.", description: "Positivity and affirmation guide" },
 ];
 
 const DEFAULT_IMAGE_MODELS: ImageModel[] = [
@@ -181,6 +220,47 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
   { id: "58", name: "Paper Craft", emoji: "📜", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Paper cut art", modelType: "flux", systemPrompt: "paper craft, layered paper, cut out style" },
   { id: "59", name: "Holographic", emoji: "🔮", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Holographic effect", modelType: "flux", systemPrompt: "holographic style, iridescent, rainbow shimmer" },
   { id: "60", name: "Human Ultra", emoji: "🧑", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Ultra realistic humans", modelType: "flux-realism", systemPrompt: "ultra realistic human, perfect anatomy, professional portrait photography, detailed skin texture, natural expression" },
+  // 40 Additional Best Image Models
+  { id: "61", name: "Midjourney Style", emoji: "✨", apiEndpoint: "https://image.pollinations.ai/prompt", description: "MJ-inspired artistic style", modelType: "flux", systemPrompt: "midjourney style, artistic, highly detailed, aesthetic" },
+  { id: "62", name: "DALL-E 3 Style", emoji: "🎨", apiEndpoint: "https://image.pollinations.ai/prompt", description: "DALL-E inspired generation", modelType: "flux", systemPrompt: "dalle3 style, creative, imaginative, high quality" },
+  { id: "63", name: "Stable Diffusion XL", emoji: "🖼️", apiEndpoint: "https://image.pollinations.ai/prompt", description: "SDXL quality images", modelType: "flux", systemPrompt: "sdxl quality, highly detailed, sharp focus, professional" },
+  { id: "64", name: "Ultra Realistic", emoji: "📷", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Hyper-realistic photography", modelType: "flux-realism", systemPrompt: "ultra realistic, hyperrealistic, 8K resolution, photorealistic, RAW photo" },
+  { id: "65", name: "Anime Pro", emoji: "🌸", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Professional anime art", modelType: "flux", systemPrompt: "anime masterpiece, best quality, detailed anime art, studio quality" },
+  { id: "66", name: "Digital Art", emoji: "💎", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Digital painting style", modelType: "flux", systemPrompt: "digital art, digital painting, artstation trending, concept art" },
+  { id: "67", name: "Concept Art", emoji: "🎭", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Professional concept art", modelType: "flux", systemPrompt: "concept art, matte painting, detailed environment, cinematic" },
+  { id: "68", name: "Renaissance", emoji: "🏰", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Renaissance painting style", modelType: "flux", systemPrompt: "renaissance painting, classical art, oil on canvas, museum quality" },
+  { id: "69", name: "Street Photography", emoji: "🌃", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Urban street photos", modelType: "flux-realism", systemPrompt: "street photography, urban, candid, documentary style, authentic" },
+  { id: "70", name: "Wildlife", emoji: "🦁", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Wildlife photography", modelType: "flux-realism", systemPrompt: "wildlife photography, national geographic, nature documentary, detailed fur" },
+  { id: "71", name: "Macro Shot", emoji: "🔬", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Extreme close-up photos", modelType: "flux-realism", systemPrompt: "macro photography, extreme close-up, detailed, shallow depth of field" },
+  { id: "72", name: "Cinematic", emoji: "🎥", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Movie scene quality", modelType: "flux-realism", systemPrompt: "cinematic, movie still, anamorphic lens, film grain, dramatic lighting" },
+  { id: "73", name: "Neon Dreams", emoji: "🌆", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Neon cyberpunk aesthetic", modelType: "flux", systemPrompt: "neon lights, cyberpunk city, rain reflections, blade runner inspired" },
+  { id: "74", name: "Ethereal", emoji: "🌙", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Dreamy ethereal style", modelType: "flux", systemPrompt: "ethereal, dreamy, soft glow, magical atmosphere, fantasy" },
+  { id: "75", name: "Dark Fantasy", emoji: "⚔️", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Dark fantasy art", modelType: "flux", systemPrompt: "dark fantasy, gothic, medieval, dramatic, ominous atmosphere" },
+  { id: "76", name: "Kawaii", emoji: "🍬", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Cute Japanese style", modelType: "flux", systemPrompt: "kawaii, cute, pastel colors, adorable, Japanese cute style" },
+  { id: "77", name: "Retro 80s", emoji: "📼", apiEndpoint: "https://image.pollinations.ai/prompt", description: "80s retro aesthetic", modelType: "flux", systemPrompt: "80s aesthetic, retro, vintage, VHS style, nostalgic" },
+  { id: "78", name: "Comic Marvel", emoji: "🦸", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Marvel comic style", modelType: "flux", systemPrompt: "marvel comics style, superhero, dynamic pose, comic book coloring" },
+  { id: "79", name: "Studio Ghibli", emoji: "🌾", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Ghibli anime style", modelType: "flux", systemPrompt: "studio ghibli style, miyazaki inspired, whimsical, detailed backgrounds" },
+  { id: "80", name: "Noir", emoji: "🕵️", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Film noir style", modelType: "flux", systemPrompt: "film noir, black and white, high contrast, shadows, detective aesthetic" },
+  { id: "81", name: "Dreamscape", emoji: "☁️", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Surreal dreamscapes", modelType: "flux", systemPrompt: "dreamscape, surreal, floating islands, impossible architecture, dream world" },
+  { id: "82", name: "Anime Portrait", emoji: "👧", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Anime character portraits", modelType: "flux", systemPrompt: "anime portrait, character design, detailed face, expressive eyes" },
+  { id: "83", name: "Game Art", emoji: "🎮", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Video game art style", modelType: "flux", systemPrompt: "video game art, game concept, character design, environment art" },
+  { id: "84", name: "Psychedelic", emoji: "🍄", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Trippy psychedelic art", modelType: "flux", systemPrompt: "psychedelic art, trippy, vibrant colors, patterns, kaleidoscope" },
+  { id: "85", name: "Realistic Portrait", emoji: "👤", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Photorealistic portraits", modelType: "flux-realism", systemPrompt: "realistic portrait, professional headshot, studio lighting, detailed skin" },
+  { id: "86", name: "Vector Art", emoji: "📐", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Clean vector graphics", modelType: "flux", systemPrompt: "vector art, flat design, clean lines, minimalist, graphic design" },
+  { id: "87", name: "Storybook", emoji: "📕", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Children's book illustration", modelType: "flux", systemPrompt: "storybook illustration, children's book, whimsical, colorful, charming" },
+  { id: "88", name: "Album Cover", emoji: "💿", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Music album artwork", modelType: "flux", systemPrompt: "album cover art, music artwork, creative, artistic, bold design" },
+  { id: "89", name: "Jewelry", emoji: "💍", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Jewelry product shots", modelType: "flux-realism", systemPrompt: "jewelry photography, product shot, macro, sparkle, luxury" },
+  { id: "90", name: "Sports Action", emoji: "⚽", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Dynamic sports photos", modelType: "flux-realism", systemPrompt: "sports photography, action shot, dynamic, high speed, athletic" },
+  { id: "91", name: "Underwater", emoji: "🐠", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Underwater photography", modelType: "flux-realism", systemPrompt: "underwater photography, ocean, marine life, blue tones, diving" },
+  { id: "92", name: "Celestial", emoji: "🌌", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Space and galaxy art", modelType: "flux", systemPrompt: "space art, galaxy, nebula, stars, cosmic, celestial" },
+  { id: "93", name: "Art Deco Luxe", emoji: "💫", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Luxury art deco style", modelType: "flux", systemPrompt: "art deco, luxury, gold accents, geometric, gatsby era, opulent" },
+  { id: "94", name: "Botanical", emoji: "🌺", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Botanical illustration", modelType: "flux", systemPrompt: "botanical illustration, scientific drawing, detailed flora, naturalist" },
+  { id: "95", name: "Dystopian", emoji: "🏚️", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Dystopian future scenes", modelType: "flux", systemPrompt: "dystopian, post-apocalyptic, ruins, desolate, futuristic decay" },
+  { id: "96", name: "Fashion Editorial", emoji: "👠", apiEndpoint: "https://image.pollinations.ai/prompt", description: "High fashion photography", modelType: "flux-realism", systemPrompt: "fashion editorial, vogue style, high fashion, dramatic poses, couture" },
+  { id: "97", name: "Fairy Tale", emoji: "🧚", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Magical fairy tale scenes", modelType: "flux", systemPrompt: "fairy tale, magical, enchanted forest, whimsical, storybook" },
+  { id: "98", name: "Grunge", emoji: "🎸", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Grungy urban aesthetic", modelType: "flux", systemPrompt: "grunge aesthetic, dirty, urban decay, rough textures, punk" },
+  { id: "99", name: "Pastel Dream", emoji: "🌸", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Soft pastel aesthetics", modelType: "flux", systemPrompt: "pastel colors, soft aesthetic, dreamy, gentle, muted tones" },
+  { id: "100", name: "Epic Battle", emoji: "⚔️", apiEndpoint: "https://image.pollinations.ai/prompt", description: "Epic battle scenes", modelType: "flux", systemPrompt: "epic battle, war scene, dramatic action, warriors, cinematic" },
 ];
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -211,24 +291,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadAIModels = async () => {
-    // Check if using Pollinations Extended provider
-    const usePollinationsExtended = localStorage.getItem("ai_provider") === "pollinations-extended";
-    
-    if (usePollinationsExtended) {
-      // Load Pollinations Extended text models
-      const pollinationsModels: AIModel[] = POLLINATIONS_TEXT_MODELS.map(m => ({
-        id: m.id,
-        name: m.name,
-        behavior: m.description,
-        emoji: m.emoji,
-        systemPrompt: `You are ${m.name}, a helpful AI assistant.`,
-        description: m.description,
-        modelId: m.modelId,
-      }));
-      setAIModels(pollinationsModels);
-      return;
-    }
-    
     try {
       const { data, error } = await supabase
         .from("ai_models")
@@ -254,25 +316,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const loadImageModels = async () => {
-    // Check if using Pollinations Extended provider
-    const usePollinationsExtended = localStorage.getItem("ai_provider") === "pollinations-extended";
-    
-    if (usePollinationsExtended) {
-      // Load Pollinations Extended image models
-      const pollinationsImageModels: ImageModel[] = POLLINATIONS_IMAGE_MODELS.map(m => ({
-        id: m.id,
-        name: m.name,
-        emoji: m.emoji,
-        apiEndpoint: "https://image.pollinations.ai/prompt",
-        description: m.description,
-        modelType: m.modelId,
-        systemPrompt: "",
-        examplePrompts: [],
-      }));
-      setImageModels(pollinationsImageModels);
-      return;
-    }
-    
     try {
       const { data, error } = await supabase
         .from("image_models")
