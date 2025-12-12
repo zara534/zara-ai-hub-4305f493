@@ -308,7 +308,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           systemPrompt: model.system_prompt,
           description: model.description,
         }));
-        setAIModels(dbModels);
+
+        // Merge existing database models with additional default models (no duplicates)
+        const existingIds = new Set(dbModels.map((m) => m.id));
+        const additionalDefaults = DEFAULT_MODELS.filter((m) => !existingIds.has(m.id));
+
+        setAIModels([...dbModels, ...additionalDefaults]);
       }
     } catch (error: any) {
       console.error("Error loading AI models:", error);
@@ -325,7 +330,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const models = data.map((model) => ({
+        const dbModels = data.map((model) => ({
           id: model.id,
           name: model.name,
           emoji: model.emoji,
@@ -335,7 +340,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           systemPrompt: model.system_prompt,
           examplePrompts: model.example_prompts,
         }));
-        setImageModels(models);
+
+        // Merge existing database image models with additional default image models (no duplicates)
+        const existingIds = new Set(dbModels.map((m) => m.id));
+        const additionalDefaults = DEFAULT_IMAGE_MODELS.filter((m) => !existingIds.has(m.id));
+
+        setImageModels([...dbModels, ...additionalDefaults]);
       }
     } catch (error: any) {
       console.error("Error loading image models:", error);
