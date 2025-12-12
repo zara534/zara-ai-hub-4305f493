@@ -151,9 +151,6 @@ export function TextGeneration() {
       const systemPrompt = model.systemPrompt || model.behavior;
       const usernameContext = username ? `The user's name is ${username}. Address them by name when appropriate.` : "";
       
-      // Check if using Pollinations Extended provider
-      const usePollinationsExtended = localStorage.getItem("ai_provider") === "pollinations-extended";
-      
       // Build conversation messages for POST request
       const conversationMessages = [
         { role: "system", content: `${systemPrompt}. ${usernameContext}` },
@@ -174,7 +171,7 @@ export function TextGeneration() {
           },
           body: JSON.stringify({
             messages: conversationMessages,
-            model: usePollinationsExtended ? ((model as any).modelId || "openai") : "openai",
+            model: "openai",
             stream: false
           }),
           signal: abortControllerRef.current.signal
