@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageGeneratorSkeleton } from "@/components/ModelLoadingSkeleton";
 
 
 interface ImageModel {
@@ -85,7 +86,7 @@ export function ImageGeneration() {
   const [error, setError] = useState<string | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [usageCount, setUsageCount] = useState(0);
-  const { imageModels = DEFAULT_IMAGE_MODELS, rateLimits } = useApp();
+  const { imageModels = DEFAULT_IMAGE_MODELS, rateLimits, isLoadingModels } = useApp();
   const { user } = useAuth();
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -266,6 +267,10 @@ export function ImageGeneration() {
   };
 
   const selectedModelData = imageModels.find(m => m.id === selectedModel);
+
+  if (isLoadingModels) {
+    return <ImageGeneratorSkeleton />;
+  }
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
