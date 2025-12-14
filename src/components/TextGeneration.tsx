@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TextModelSkeleton, TextChatSkeleton } from "@/components/ModelLoadingSkeleton";
 
 
 interface Message {
@@ -19,7 +20,7 @@ interface Message {
 }
 
 export function TextGeneration() {
-  const { aiModels, rateLimits } = useApp();
+  const { aiModels, rateLimits, isLoadingModels } = useApp();
   const { user } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
@@ -332,6 +333,15 @@ export function TextGeneration() {
   };
 
   const selectedModelData = aiModels.find((m) => m.id === selectedModel);
+
+  if (isLoadingModels) {
+    return (
+      <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
+        <TextModelSkeleton />
+        <TextChatSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">

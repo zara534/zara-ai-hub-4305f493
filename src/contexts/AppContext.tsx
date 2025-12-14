@@ -51,6 +51,7 @@ interface AppContextType {
   isAdmin: boolean;
   login: (password: string) => boolean;
   logout: () => void;
+  isLoadingModels: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -346,6 +347,7 @@ const DEFAULT_IMAGE_MODELS: ImageModel[] = [
 export function AppProvider({ children }: { children: ReactNode }) {
   const [aiModels, setAIModels] = useState<AIModel[]>(DEFAULT_MODELS);
   const [imageModels, setImageModels] = useState<ImageModel[]>(DEFAULT_IMAGE_MODELS);
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const stored = localStorage.getItem("appSettings");
@@ -366,8 +368,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    loadAIModels();
-    loadImageModels();
+    const loadModels = async () => {
+      setIsLoadingModels(true);
+      await Promise.all([loadAIModels(), loadImageModels()]);
+      setIsLoadingModels(false);
+    };
+    loadModels();
   }, []);
 
   const loadAIModels = async () => {
@@ -613,6 +619,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isAdmin,
         login,
         logout,
+        isLoadingModels,
       }}
     >
       {children}
