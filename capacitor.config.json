@@ -1,0 +1,15 @@
+{
+  "appId": "com.goodluckzara.zaraailab",
+  "appName": "ZARA AI HUB",
+  "webDir": "dist",
+  "server": {
+    "url": "https://e4c568ef-b432-4621-8aae-ae585b94f577.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  },
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "android": {
+    "backgroundColor": "#1a1a2e"
+  }
+}
