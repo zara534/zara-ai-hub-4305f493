@@ -325,14 +325,14 @@ export function ImageGeneration() {
           {selectedModelData?.examplePrompts && selectedModelData.examplePrompts.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Try these examples:</p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 {selectedModelData.examplePrompts.map((example, idx) => (
                   <Button
                     key={idx}
                     variant="outline"
                     size="sm"
                     onClick={() => handleExamplePromptClick(example)}
-                    className="text-xs"
+                    className="text-xs h-auto py-2 px-3 text-left whitespace-normal break-words w-full justify-start"
                   >
                     {example}
                   </Button>
