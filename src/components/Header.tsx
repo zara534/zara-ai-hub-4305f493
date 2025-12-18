@@ -7,7 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ProfileManager } from "./ProfileManager";
-
+import { InstallPWA } from "./InstallPWA";
 interface HeaderProps {
   currentView: "home" | "admin" | "settings";
   onViewChange: (view: "home" | "admin" | "settings") => void;
@@ -75,6 +75,9 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 <div className="px-2">
                   <ProfileManager />
                 </div>
+                <div className="px-2">
+                  <InstallPWA />
+                </div>
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-lg h-12 text-destructive hover:text-destructive/90"
@@ -123,6 +126,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               Settings
             </Button>
             <ProfileManager />
+            <InstallPWA />
             <Button
               variant="ghost"
               size="sm"
