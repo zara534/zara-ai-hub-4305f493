@@ -213,16 +213,42 @@ export function ImageGeneration() {
       };
       img.onerror = () => {
         if (abortControllerRef.current?.signal.aborted) return;
-        setError("Failed to load image. Please try again.");
-        toast.error("Failed to generate image");
+        const errorMessages = [
+          "The AI is taking a short break. Try again in a moment!",
+          "High demand right now. Give it another shot!",
+          "Something went wrong on our end. Please try again.",
+          "The image couldn't be created this time. Try a different prompt or try again.",
+          "Oops! The AI stumbled. Please try once more."
+        ];
+        const randomError = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+        setError(randomError);
+        toast.error("Image generation paused", {
+          description: "The AI service is busy. Try again shortly.",
+          action: {
+            label: "Retry",
+            onClick: () => handleGenerate()
+          }
+        });
         setIsLoading(false);
       };
       img.src = imageUrl;
     } catch (error) {
       if (abortControllerRef.current?.signal.aborted) return;
       console.error("Image generation error:", error);
-      setError("Failed to generate image. Please try again.");
-      toast.error("Failed to generate image");
+      const errorMessages = [
+        "Connection interrupted. Please check your internet and try again.",
+        "The AI service is temporarily unavailable. Try again in a few seconds.",
+        "We hit a small snag. Please give it another go!"
+      ];
+      const randomError = errorMessages[Math.floor(Math.random() * errorMessages.length)];
+      setError(randomError);
+      toast.error("Generation paused", {
+        description: randomError,
+        action: {
+          label: "Retry",
+          onClick: () => handleGenerate()
+        }
+      });
       setIsLoading(false);
     }
   };
@@ -377,17 +403,22 @@ export function ImageGeneration() {
           )}
 
           {error && !isLoading && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-destructive/10 rounded-lg border-2 border-destructive/30">
-              <div className="w-20 h-20 rounded-full bg-destructive/20 flex items-center justify-center">
-                <span className="text-5xl">❌</span>
+            <div className="flex flex-col items-center justify-center py-12 space-y-4 bg-amber-500/10 rounded-lg border-2 border-amber-500/30">
+              <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <span className="text-5xl">⏸️</span>
               </div>
-              <div className="text-center">
-                <p className="font-bold text-lg text-destructive">⚠️ Generation Failed</p>
-                <p className="text-sm text-muted-foreground mt-1">{error}</p>
+              <div className="text-center px-4">
+                <p className="font-bold text-lg text-amber-600 dark:text-amber-400">Generation Paused</p>
+                <p className="text-sm text-muted-foreground mt-2 max-w-md">{error}</p>
               </div>
-              <Button onClick={handleGenerate} variant="outline">
-                🔄 Try Again
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={handleGenerate} className="bg-primary hover:bg-primary/90">
+                  🔄 Try Again
+                </Button>
+                <Button onClick={() => setError(null)} variant="outline">
+                  Dismiss
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
