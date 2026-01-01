@@ -87,7 +87,7 @@ export function ImageGeneration() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [usageCount, setUsageCount] = useState(0);
   const { imageModels = DEFAULT_IMAGE_MODELS, rateLimits, isLoadingModels } = useApp();
-  const { user } = useAuth();
+  const { user, isUnlimited } = useAuth();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -166,8 +166,8 @@ export function ImageGeneration() {
       return;
     }
 
-    // Check rate limits
-    if (!rateLimits.isUnlimited && usageCount >= rateLimits.dailyImageGenerations) {
+    // Check rate limits (admins have unlimited access)
+    if (!isUnlimited && !rateLimits.isUnlimited && usageCount >= rateLimits.dailyImageGenerations) {
       toast.error(`Daily limit reached! You can generate ${rateLimits.dailyImageGenerations} images per day. Current usage: ${usageCount}/${rateLimits.dailyImageGenerations}`);
       return;
     }

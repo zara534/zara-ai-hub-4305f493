@@ -1,0 +1,10 @@
+project_id = "scgoyggukjedqfapjqbu"
+
+[api]
+enabled = true
+
+[functions.generate-image]
+verify_jwt = false
+
+[functions.generate-text]
+verify_jwt = false

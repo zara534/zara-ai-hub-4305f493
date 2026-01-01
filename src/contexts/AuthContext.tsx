@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isUnlimited: boolean;
   logout: () => Promise<void>;
 }
 
@@ -66,8 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(false);
   };
 
+  // Admins have unlimited access
+  const isUnlimited = isAdmin;
+
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, logout }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isUnlimited, logout }}>
       {children}
     </AuthContext.Provider>
   );
