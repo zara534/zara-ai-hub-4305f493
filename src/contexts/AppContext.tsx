@@ -356,12 +356,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : { fontFamily: "inter", colorTheme: "default", darkMode: false };
   });
 
-  const [rateLimits, setRateLimits] = useState<RateLimits>(() => {
-    const stored = localStorage.getItem("rateLimits");
-    return stored
-      ? JSON.parse(stored)
-      : { dailyTextGenerations: 50, dailyImageGenerations: 20, isUnlimited: false };
+  const [rateLimits, setRateLimits] = useState<RateLimits>({
+    dailyTextGenerations: 50, 
+    dailyImageGenerations: 20, 
+    isUnlimited: false
   });
+
+  // Load global limits from database
+  const loadGlobalLimits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("global_limits")
+        .select("*")
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== "PGRST116") {
+        console.error("Error loading global limits:", error);
+        return;
+      }
+      
+      if (data) {
+        setRateLimits(prev => ({
+          ...prev,
+          dailyTextGenerations: data.text_limit_enabled ? data.text_limit : 999999,
+          dailyImageGenerations: data.image_limit_enabled ? data.image_limit : 999999,
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading global limits:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadGlobalLimits();
+  }, []);
 
   const [isAdmin, setIsAdmin] = useState(() => {
     return localStorage.getItem("isAdmin") === "true";

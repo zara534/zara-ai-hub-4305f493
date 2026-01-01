@@ -21,7 +21,7 @@ interface Message {
 
 export function TextGeneration() {
   const { aiModels, rateLimits, isLoadingModels } = useApp();
-  const { user } = useAuth();
+  const { user, isUnlimited } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -123,8 +123,8 @@ export function TextGeneration() {
       return;
     }
 
-    // Check rate limits
-    if (!rateLimits.isUnlimited && usageCount >= rateLimits.dailyTextGenerations) {
+    // Check rate limits (admins have unlimited access)
+    if (!isUnlimited && !rateLimits.isUnlimited && usageCount >= rateLimits.dailyTextGenerations) {
       toast.error(`Daily limit reached! You can generate ${rateLimits.dailyTextGenerations} texts per day. Current usage: ${usageCount}/${rateLimits.dailyTextGenerations}`);
       return;
     }
