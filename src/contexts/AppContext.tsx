@@ -429,9 +429,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const additionalDefaults = DEFAULT_MODELS.filter((m) => !existingIds.has(m.id));
 
         setAIModels([...dbModels, ...additionalDefaults]);
+      } else {
+        // No data from database, use defaults
+        setAIModels(DEFAULT_MODELS);
       }
     } catch (error: any) {
       console.error("Error loading AI models:", error);
+      // On error, still show default models
+      setAIModels(DEFAULT_MODELS);
     }
   };
 
@@ -461,9 +466,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const additionalDefaults = DEFAULT_IMAGE_MODELS.filter((m) => !existingIds.has(m.id));
 
         setImageModels([...dbModels, ...additionalDefaults]);
+      } else {
+        // No data from database, use defaults
+        setImageModels(DEFAULT_IMAGE_MODELS);
       }
     } catch (error: any) {
       console.error("Error loading image models:", error);
+      // On error, still show default models
+      setImageModels(DEFAULT_IMAGE_MODELS);
     }
   };
 
