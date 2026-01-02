@@ -154,7 +154,7 @@ export function TextGeneration() {
       
       // Build conversation messages for POST request
       const conversationMessages = [
-        { role: "system", content: `${systemPrompt}. ${usernameContext}` },
+        { role: "system", content: `${systemPrompt}. ${usernameContext}. IMPORTANT: Keep your responses short, clear and to the point. Avoid long explanations unless specifically asked. You may not have access to real-time or recent information.` },
         ...messages.slice(-5).map(m => ({
           role: m.role,
           content: m.content
@@ -219,8 +219,9 @@ export function TextGeneration() {
         toast.info("Generation stopped");
       } else {
         console.error("Error:", error);
-        toast.error("Failed to generate text. Please try again.");
-        setMessages((prev) => prev.filter((msg) => msg.id !== assistantId));
+        // Remove the failed user message and don't add assistant message
+        setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id && msg.id !== assistantId));
+        toast.info("Message not sent. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -344,7 +345,7 @@ export function TextGeneration() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-3 px-2 md:px-4">
+    <div className="w-full max-w-5xl mx-auto flex flex-col h-[calc(100vh-180px)] px-2 md:px-4 gap-3">
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -385,7 +386,7 @@ export function TextGeneration() {
         </CardContent>
       </Card>
 
-      <Card className="min-h-[450px] md:min-h-[550px] flex flex-col shadow-lg border-2">
+      <Card className="flex-1 flex flex-col shadow-lg border-2">
         <ScrollArea className="flex-1 p-3 md:p-6" ref={scrollRef}>
           <div className="space-y-4 md:space-y-6">
             {messages.length === 0 ? (
@@ -400,6 +401,9 @@ export function TextGeneration() {
                 </h3>
                 <p className="text-sm md:text-base text-muted-foreground max-w-md">
                   {selectedModelData?.description || "Start a conversation and experience AI-powered assistance"}
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-2">
+                  💡 AI may not know recent events or real-time info
                 </p>
               </div>
             ) : (
