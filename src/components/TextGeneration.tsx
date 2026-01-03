@@ -150,11 +150,11 @@ export function TextGeneration() {
 
     try {
       const systemPrompt = model.systemPrompt || model.behavior;
-      const usernameContext = username ? `The user's name is ${username}. Address them by name when appropriate.` : "";
+      const usernameContext = username ? `The user's name is ${username}. Only use their name occasionally when it feels natural - don't say it every response.` : "";
       
       // Build conversation messages for POST request
       const conversationMessages = [
-        { role: "system", content: `${systemPrompt}. ${usernameContext}. IMPORTANT: Keep your responses short, clear and to the point. Avoid long explanations unless specifically asked. You may not have access to real-time or recent information.` },
+        { role: "system", content: `${systemPrompt}. ${usernameContext}. IMPORTANT: Keep responses SHORT (1-3 sentences max unless asked for more). No long explanations. Be direct. You may not have access to recent information.` },
         ...messages.slice(-5).map(m => ({
           role: m.role,
           content: m.content
@@ -390,20 +390,39 @@ export function TextGeneration() {
         <ScrollArea className="flex-1 p-3 md:p-6" ref={scrollRef}>
           <div className="space-y-4 md:space-y-6">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center px-4">
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 md:mb-4">
-                  <span className="text-2xl md:text-3xl font-bold text-primary">
-                    {selectedModelData?.name.charAt(0).toUpperCase() || "Z"}
-                  </span>
+              <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center px-4">
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                  <span className="text-xl md:text-2xl">{selectedModelData?.emoji || "🤖"}</span>
                 </div>
-                <h3 className="text-lg md:text-xl font-semibold mb-2">
-                  Chat with {selectedModelData?.name || "ZARA AI"}
+                <h3 className="text-base md:text-lg font-semibold mb-1">
+                  {selectedModelData?.name || "ZARA AI"}
                 </h3>
-                <p className="text-sm md:text-base text-muted-foreground max-w-md">
-                  {selectedModelData?.description || "Start a conversation and experience AI-powered assistance"}
+                <p className="text-xs md:text-sm text-muted-foreground max-w-sm mb-4">
+                  {selectedModelData?.description || "Start a conversation"}
                 </p>
-                <p className="text-xs text-muted-foreground/70 mt-2">
-                  💡 AI may not know recent events or real-time info
+                
+                {/* Quick Starter Prompts */}
+                {selectedModelData?.starterPrompts && selectedModelData.starterPrompts.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-2 mb-3">
+                    {selectedModelData.starterPrompts.map((starterPrompt, idx) => (
+                      <Button
+                        key={idx}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setPrompt(starterPrompt);
+                          toast.success("Prompt ready! Hit send");
+                        }}
+                        className="text-xs h-8 px-3 rounded-full hover:bg-primary/10 hover:border-primary"
+                      >
+                        {starterPrompt}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                
+                <p className="text-[10px] text-muted-foreground/60">
+                  💡 May not know recent events
                 </p>
               </div>
             ) : (
