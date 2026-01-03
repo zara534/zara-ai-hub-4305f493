@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Download, Image as ImageIcon, Copy, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { ImageGeneratorSkeleton } from "@/components/ModelLoadingSkeleton";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { UsageDisplay } from "@/components/UsageDisplay";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 
 interface ImageModel {
@@ -85,69 +86,10 @@ export function ImageGeneration() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const [usageCount, setUsageCount] = useState(0);
-  const { imageModels = DEFAULT_IMAGE_MODELS, rateLimits, isLoadingModels } = useApp();
-  const { user, isUnlimited } = useAuth();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { imageModels = DEFAULT_IMAGE_MODELS, isLoadingModels } = useApp();
+  const { imageUsed, imageLimit, tier, canGenerate, incrementUsage } = useUsageLimits();
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    loadUsage();
-  }, [user]);
-
-  const loadUsage = async () => {
-    if (!user) return;
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data } = await supabase
-        .from("user_usage")
-        .select("image_generations")
-        .eq("user_id", user.id)
-        .eq("usage_date", today)
-        .single();
-      
-      if (data) {
-        setUsageCount(data.image_generations);
-      }
-    } catch (error) {
-      console.error("Error loading usage:", error);
-    }
-  };
-
-  const incrementUsage = async () => {
-    if (!user) return;
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: existing } = await supabase
-        .from("user_usage")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("usage_date", today)
-        .single();
-
-      if (existing) {
-        await supabase
-          .from("user_usage")
-          .update({ 
-            image_generations: existing.image_generations + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", existing.id);
-        setUsageCount(existing.image_generations + 1);
-      } else {
-        await supabase
-          .from("user_usage")
-          .insert({ 
-            user_id: user.id,
-            usage_date: today,
-            text_generations: 0,
-            image_generations: 1
-          });
-        setUsageCount(1);
-      }
-    } catch (error) {
-      console.error("Error incrementing usage:", error);
-    }
-  };
 
   const getImageDimensions = (ratio: string) => {
     const dimensions: Record<string, { width: number; height: number }> = {
@@ -166,9 +108,14 @@ export function ImageGeneration() {
       return;
     }
 
-    // Check rate limits (admins have unlimited access)
-    if (!isUnlimited && !rateLimits.isUnlimited && usageCount >= rateLimits.dailyImageGenerations) {
-      toast.error(`Daily limit reached! You can generate ${rateLimits.dailyImageGenerations} images per day. Current usage: ${usageCount}/${rateLimits.dailyImageGenerations}`);
+    // Check rate limits
+    if (!canGenerate("image")) {
+      toast.error(`Daily limit reached! You've used ${imageUsed}/${imageLimit} image generations today.`, {
+        action: {
+          label: "Upgrade",
+          onClick: () => setUpgradeOpen(true),
+        },
+      });
       return;
     }
 
@@ -207,7 +154,7 @@ export function ImageGeneration() {
           timestamp: Date.now()
         };
         setGeneratedImages(prev => [newImage, ...prev]);
-        incrementUsage();
+        incrementUsage("image");
         toast.success("Image generated successfully!");
         setIsLoading(false);
       };
@@ -299,18 +246,30 @@ export function ImageGeneration() {
   }
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto">
-      <Card className="shadow-lg border-2">
-        <CardHeader>
-          <CardTitle className="text-2xl">
-            <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-              ZARA AI HUB
-            </span>
-          </CardTitle>
-          <p className="text-sm text-muted-foreground mt-2">
-            {selectedModelData?.description || "Generate stunning images with AI"}
-          </p>
-        </CardHeader>
+    <>
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} currentTier={tier} />
+      <div className="space-y-4 max-w-5xl mx-auto">
+        <Card className="shadow-lg border-2">
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <CardTitle className="text-2xl">
+                <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                  ZARA AI HUB
+                </span>
+              </CardTitle>
+              <UsageDisplay 
+                used={imageUsed} 
+                limit={imageLimit} 
+                type="image" 
+                tier={tier} 
+                onUpgrade={() => setUpgradeOpen(true)}
+                compact 
+              />
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {selectedModelData?.description || "Generate stunning images with AI"}
+            </p>
+          </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select value={selectedModel} onValueChange={(value) => {
@@ -477,5 +436,6 @@ export function ImageGeneration() {
         </div>
       )}
     </div>
+    </>
   );
 }
