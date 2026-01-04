@@ -162,7 +162,7 @@ export function TextGeneration() {
         { role: "user", content: userMessage.content }
       ];
       
-      // Use the standard Pollinations API
+      // Use the standard Pollinations API with randomness for variety
       const response = await fetch(
         "https://text.pollinations.ai/openai",
         {
@@ -173,7 +173,9 @@ export function TextGeneration() {
           body: JSON.stringify({
             messages: conversationMessages,
             model: "openai",
-            stream: false
+            stream: false,
+            temperature: 0.9,
+            seed: Math.floor(Math.random() * 1000000)
           }),
           signal: abortControllerRef.current.signal
         }
