@@ -11,9 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TextModelSkeleton, TextChatSkeleton } from "@/components/ModelLoadingSkeleton";
-import { useUsageLimits } from "@/hooks/useUsageLimits";
-import { UsageDisplay } from "@/components/UsageDisplay";
-import { UpgradeModal } from "@/components/UpgradeModal";
 
 
 interface Message {
@@ -23,23 +20,23 @@ interface Message {
 }
 
 export function TextGeneration() {
-  const { aiModels, isLoadingModels } = useApp();
-  const { user } = useAuth();
-  const { textUsed, textLimit, textRemaining, tier, isUnlimited, canGenerate, incrementUsage, isLoading: limitsLoading } = useUsageLimits();
+  const { aiModels, rateLimits, isLoadingModels } = useApp();
+  const { user, isUnlimited } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState(aiModels[0]?.id || "");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [username, setUsername] = useState<string>("");
+  const [usageCount, setUsageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareContent, setShareContent] = useState("");
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   useEffect(() => {
     loadUsername();
+    loadUsage();
   }, [user]);
 
   const loadUsername = async () => {
@@ -58,6 +55,61 @@ export function TextGeneration() {
     }
   };
 
+  const loadUsage = async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from("user_usage")
+        .select("text_generations")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .single();
+      
+      if (data) {
+        setUsageCount(data.text_generations);
+      }
+    } catch (error) {
+      console.error("Error loading usage:", error);
+    }
+  };
+
+  const incrementUsage = async () => {
+    if (!user) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: existing } = await supabase
+        .from("user_usage")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from("user_usage")
+          .update({ 
+            text_generations: existing.text_generations + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existing.id);
+        setUsageCount(existing.text_generations + 1);
+      } else {
+        await supabase
+          .from("user_usage")
+          .insert({ 
+            user_id: user.id,
+            usage_date: today,
+            text_generations: 1,
+            image_generations: 0
+          });
+        setUsageCount(1);
+      }
+    } catch (error) {
+      console.error("Error incrementing usage:", error);
+    }
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -71,14 +123,9 @@ export function TextGeneration() {
       return;
     }
 
-    // Check rate limits
-    if (!canGenerate("text")) {
-      toast.error(`Daily limit reached! You've used ${textUsed}/${textLimit} text generations today.`, {
-        action: {
-          label: "Upgrade",
-          onClick: () => setUpgradeOpen(true),
-        },
-      });
+    // Check rate limits (admins have unlimited access)
+    if (!isUnlimited && !rateLimits.isUnlimited && usageCount >= rateLimits.dailyTextGenerations) {
+      toast.error(`Daily limit reached! You can generate ${rateLimits.dailyTextGenerations} texts per day. Current usage: ${usageCount}/${rateLimits.dailyTextGenerations}`);
       return;
     }
 
@@ -164,7 +211,7 @@ export function TextGeneration() {
       }
       
       if (!abortControllerRef.current?.signal.aborted) {
-        await incrementUsage("text");
+        await incrementUsage();
         toast.success("Response complete!");
       }
     } catch (error: any) {
@@ -298,56 +345,46 @@ export function TextGeneration() {
   }
 
   return (
-    <>
-      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} currentTier={tier} />
-      <div className="w-full max-w-5xl mx-auto flex flex-col h-[calc(100vh-180px)] px-2 md:px-4 gap-3">
-        <Card className="shadow-lg border-2">
-          <CardContent className="pt-4 md:pt-6 space-y-3">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-3 flex-1">
-                <Select value={selectedModel} onValueChange={(value) => {
-                  setSelectedModel(value);
-                  const model = aiModels.find(m => m.id === value);
-                  toast.success(`Switched to ${model?.name || 'AI Model'}`);
-                }}>
-                  <SelectTrigger className="w-full md:w-[280px]">
-                    <SelectValue placeholder="Choose AI Agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aiModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{model.emoji}</span>
-                          <span className="font-medium">{model.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <UsageDisplay 
-                  used={textUsed} 
-                  limit={textLimit} 
-                  type="text" 
-                  tier={tier} 
-                  onUpgrade={() => setUpgradeOpen(true)}
-                  compact 
-                />
-                {messages.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownload}
-                  >
-                    <Download className="w-4 h-4 md:mr-2" />
-                    <span className="hidden md:inline">Download</span>
-                  </Button>
-                )}
-              </div>
+    <div className="w-full max-w-5xl mx-auto flex flex-col h-[calc(100vh-180px)] px-2 md:px-4 gap-3">
+      <Card className="shadow-lg border-2">
+        <CardContent className="pt-4 md:pt-6 space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3 flex-1">
+              <Select value={selectedModel} onValueChange={(value) => {
+                setSelectedModel(value);
+                const model = aiModels.find(m => m.id === value);
+                toast.success(`Switched to ${model?.name || 'AI Model'}`);
+              }}>
+                <SelectTrigger className="w-full md:w-[280px]">
+                  <SelectValue placeholder="Choose AI Agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{model.emoji}</span>
+                        <span className="font-medium">{model.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Download</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="flex-1 flex flex-col shadow-lg border-2">
         <ScrollArea className="flex-1 p-3 md:p-6" ref={scrollRef}>
@@ -576,6 +613,5 @@ export function TextGeneration() {
         </DialogContent>
       </Dialog>
     </div>
-    </>
   );
 }

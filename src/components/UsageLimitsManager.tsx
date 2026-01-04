@@ -3,25 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Gauge, Crown, Zap, Infinity } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Gauge, Infinity } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-
-interface GlobalLimits {
-  free_text_limit: number;
-  free_image_limit: number;
-  pro_text_limit: number;
-  pro_image_limit: number;
-}
 
 export function UsageLimitsManager() {
-  const [limits, setLimits] = useState<GlobalLimits>({
-    free_text_limit: 10,
-    free_image_limit: 5,
-    pro_text_limit: 100,
-    pro_image_limit: 50,
-  });
+  const [textLimit, setTextLimit] = useState<number | null>(null);
+  const [imageLimit, setImageLimit] = useState<number | null>(null);
+  const [textLimitEnabled, setTextLimitEnabled] = useState(false);
+  const [imageLimitEnabled, setImageLimitEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -38,54 +29,52 @@ export function UsageLimitsManager() {
       if (error) throw error;
 
       if (data) {
-        setLimits({
-          free_text_limit: data.free_text_limit ?? 10,
-          free_image_limit: data.free_image_limit ?? 5,
-          pro_text_limit: data.pro_text_limit ?? 100,
-          pro_image_limit: data.pro_image_limit ?? 50,
-        });
+        setTextLimit(data.text_generation_limit);
+        setImageLimit(data.image_generation_limit);
+        setTextLimitEnabled(data.text_generation_limit !== null);
+        setImageLimitEnabled(data.image_generation_limit !== null);
       }
     } catch (error: any) {
       console.error("Error loading limits:", error);
-      // Use defaults if table doesn't have new columns yet
+      toast.error("Failed to load limits");
     }
   };
 
   const handleSaveLimits = async () => {
     setLoading(true);
     try {
+      // Check if a record exists
       const { data: existingData } = await supabase
         .from("global_limits")
         .select("id")
         .maybeSingle();
 
       if (existingData) {
+        // Update existing record
         const { error } = await supabase
           .from("global_limits")
           .update({
-            free_text_limit: limits.free_text_limit,
-            free_image_limit: limits.free_image_limit,
-            pro_text_limit: limits.pro_text_limit,
-            pro_image_limit: limits.pro_image_limit,
+            text_generation_limit: textLimitEnabled ? textLimit : null,
+            image_generation_limit: imageLimitEnabled ? imageLimit : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existingData.id);
 
         if (error) throw error;
       } else {
+        // Insert new record
         const { error } = await supabase
           .from("global_limits")
           .insert({
-            free_text_limit: limits.free_text_limit,
-            free_image_limit: limits.free_image_limit,
-            pro_text_limit: limits.pro_text_limit,
-            pro_image_limit: limits.pro_image_limit,
+            text_generation_limit: textLimitEnabled ? textLimit : null,
+            image_generation_limit: imageLimitEnabled ? imageLimit : null,
           });
 
         if (error) throw error;
       }
 
       toast.success("Usage limits updated successfully!");
+      await loadLimits(); // Reload to get the latest data
     } catch (error: any) {
       console.error("Error saving limits:", error);
       toast.error(`Failed to save limits: ${error?.message || "Unknown error"}`);
@@ -102,89 +91,83 @@ export function UsageLimitsManager() {
           Daily Usage Limits
         </CardTitle>
         <CardDescription>
-          Configure daily generation limits for each subscription tier.
+          Set daily generation limits for all users. Leave disabled for unlimited usage.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Free Tier */}
-        <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-1">
-              <Zap className="w-3 h-3" />
-              Free Tier
-            </Badge>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="text-limit-toggle" className="text-base font-medium">
+                Text Generation Limit
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {textLimitEnabled ? `${textLimit || 0} generations per day` : "Unlimited"}
+              </p>
+            </div>
+            <Switch
+              id="text-limit-toggle"
+              checked={textLimitEnabled}
+              onCheckedChange={setTextLimitEnabled}
+            />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="free-text">Text Generations / Day</Label>
+
+          {textLimitEnabled && (
+            <div className="space-y-2 pl-4">
+              <Label htmlFor="text-limit">Generations per day</Label>
               <Input
-                id="free-text"
+                id="text-limit"
                 type="number"
                 min="0"
-                value={limits.free_text_limit}
-                onChange={(e) => setLimits(prev => ({ ...prev, free_text_limit: parseInt(e.target.value) || 0 }))}
+                value={textLimit || ""}
+                onChange={(e) => setTextLimit(parseInt(e.target.value) || 0)}
+                placeholder="e.g., 50"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="free-image">Image Generations / Day</Label>
-              <Input
-                id="free-image"
-                type="number"
-                min="0"
-                value={limits.free_image_limit}
-                onChange={(e) => setLimits(prev => ({ ...prev, free_image_limit: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Pro Tier */}
-        <div className="space-y-4 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
-          <div className="flex items-center gap-2">
-            <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-              <Crown className="w-3 h-3" />
-              Pro Tier
-            </Badge>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pro-text">Text Generations / Day</Label>
-              <Input
-                id="pro-text"
-                type="number"
-                min="0"
-                value={limits.pro_text_limit}
-                onChange={(e) => setLimits(prev => ({ ...prev, pro_text_limit: parseInt(e.target.value) || 0 }))}
-              />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="space-y-1">
+              <Label htmlFor="image-limit-toggle" className="text-base font-medium">
+                Image Generation Limit
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {imageLimitEnabled ? `${imageLimit || 0} generations per day` : "Unlimited"}
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="pro-image">Image Generations / Day</Label>
-              <Input
-                id="pro-image"
-                type="number"
-                min="0"
-                value={limits.pro_image_limit}
-                onChange={(e) => setLimits(prev => ({ ...prev, pro_image_limit: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
+            <Switch
+              id="image-limit-toggle"
+              checked={imageLimitEnabled}
+              onCheckedChange={setImageLimitEnabled}
+            />
           </div>
-        </div>
 
-        {/* Unlimited Tier Info */}
-        <div className="flex items-center gap-2 p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-          <Badge className="gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-            <Infinity className="w-3 h-3" />
-            Unlimited
-          </Badge>
-          <span className="text-sm text-muted-foreground">No limits (managed via user subscriptions)</span>
+          {imageLimitEnabled && (
+            <div className="space-y-2 pl-4">
+              <Label htmlFor="image-limit">Generations per day</Label>
+              <Input
+                id="image-limit"
+                type="number"
+                min="0"
+                value={imageLimit || ""}
+                onChange={(e) => setImageLimit(parseInt(e.target.value) || 0)}
+                placeholder="e.g., 20"
+              />
+            </div>
+          )}
         </div>
 
         <Button onClick={handleSaveLimits} disabled={loading} className="w-full" size="lg">
           {loading ? "Saving..." : "Save Limits"}
         </Button>
 
-        <div className="text-xs text-muted-foreground text-center">
-          💡 Admins always have unlimited access. Limits reset daily at midnight UTC.
+        <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <Infinity className="w-5 h-5 text-primary" />
+          <p className="text-sm text-muted-foreground">
+            Limits reset daily at midnight UTC. Users will see their remaining generations.
+          </p>
         </div>
       </CardContent>
     </Card>

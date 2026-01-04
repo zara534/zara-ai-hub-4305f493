@@ -9,8 +9,6 @@ import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImageModelManager } from "./ImageModelManager";
-import { UsageLimitsManager } from "./UsageLimitsManager";
-import { SubscriptionManager } from "./SubscriptionManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AdminPanel() {
@@ -103,21 +101,11 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-5xl mx-auto px-2 md:px-4 pb-6">
-      <Tabs defaultValue="subscriptions" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          <TabsTrigger value="limits">Limits</TabsTrigger>
+      <Tabs defaultValue="text-models" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="text-models">Text AI</TabsTrigger>
           <TabsTrigger value="image-models">Image AI</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="subscriptions" className="space-y-6 mt-6">
-          <SubscriptionManager />
-        </TabsContent>
-
-        <TabsContent value="limits" className="space-y-6 mt-6">
-          <UsageLimitsManager />
-        </TabsContent>
 
         <TabsContent value="text-models" className="space-y-6 mt-6">
       {/* Add AI Agent Card */}
