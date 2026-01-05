@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SplashScreen } from "@/components/SplashScreen";
+import { OnboardingTutorial } from "@/components/OnboardingTutorial";
 import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
@@ -35,6 +36,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <OnboardingTutorial />
             {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
             <BrowserRouter>
               <Routes>
