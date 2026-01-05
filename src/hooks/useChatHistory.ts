@@ -57,10 +57,14 @@ export function useChatHistory() {
   };
 
   const updateSession = (sessionId: string, messages: ChatMessage[]) => {
-    const title = messages.find(m => m.role === "user")?.content.slice(0, 40) || "New Chat";
+    const firstUserMsg = messages.find(m => m.role === "user")?.content || "New Chat";
+    // Truncate at 30 chars for better display
+    const title = firstUserMsg.length > 30 
+      ? firstUserMsg.slice(0, 30) + "..." 
+      : firstUserMsg;
     const updated = sessions.map(s => 
       s.id === sessionId 
-        ? { ...s, messages, updatedAt: new Date().toISOString(), title: title + (title.length >= 40 ? "..." : "") }
+        ? { ...s, messages, updatedAt: new Date().toISOString(), title }
         : s
     );
     saveSessions(updated);
