@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw, ThumbsDown, Heart } from "lucide-react";
+import { Loader2, Send, Download, Copy, Check, X, Share2, RefreshCw, ThumbsDown, Heart, Star, StarOff } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,6 +11,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TextModelSkeleton, TextChatSkeleton } from "@/components/ModelLoadingSkeleton";
+import { useChatHistory, ChatMessage } from "@/hooks/useChatHistory";
+import { useFavorites } from "@/hooks/useFavorites";
+import { ChatHistoryPanel } from "@/components/ChatHistoryPanel";
 
 
 interface Message {
@@ -33,6 +36,11 @@ export function TextGeneration() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareContent, setShareContent] = useState("");
+  
+  // Chat History and Favorites
+  const { sessions, createSession, updateSession, deleteSession, clearAllSessions, getSession } = useChatHistory();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsername();
@@ -115,6 +123,37 @@ export function TextGeneration() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Save messages to chat history
+  useEffect(() => {
+    if (currentSessionId && messages.length > 0) {
+      updateSession(currentSessionId, messages as ChatMessage[]);
+    }
+  }, [messages, currentSessionId]);
+
+  // Sort models: favorites first
+  const sortedModels = [...aiModels].sort((a, b) => {
+    const aFav = isFavorite(a.id);
+    const bFav = isFavorite(b.id);
+    if (aFav && !bFav) return -1;
+    if (!aFav && bFav) return 1;
+    return 0;
+  });
+
+  const handleNewChat = () => {
+    const model = aiModels.find(m => m.id === selectedModel);
+    if (model) {
+      const session = createSession(model.id, model.name, model.emoji);
+      setCurrentSessionId(session.id);
+      setMessages([]);
+    }
+  };
+
+  const handleSelectSession = (session: any) => {
+    setCurrentSessionId(session.id);
+    setMessages(session.messages);
+    setSelectedModel(session.modelId);
+  };
 
 
   const handleGenerate = async () => {
@@ -351,19 +390,34 @@ export function TextGeneration() {
       <Card className="shadow-lg border-2">
         <CardContent className="pt-4 md:pt-6 space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-2 flex-1">
+              <ChatHistoryPanel
+                sessions={sessions}
+                currentSessionId={currentSessionId}
+                onSelectSession={handleSelectSession}
+                onDeleteSession={deleteSession}
+                onClearAll={clearAllSessions}
+                onNewChat={handleNewChat}
+              />
               <Select value={selectedModel} onValueChange={(value) => {
                 setSelectedModel(value);
                 const model = aiModels.find(m => m.id === value);
                 toast.success(`Switched to ${model?.name || 'AI Model'}`);
+                // Start new session when switching models
+                if (model) {
+                  const session = createSession(model.id, model.name, model.emoji);
+                  setCurrentSessionId(session.id);
+                  setMessages([]);
+                }
               }}>
-                <SelectTrigger className="w-full md:w-[280px]">
+                <SelectTrigger className="w-full md:w-[240px]">
                   <SelectValue placeholder="Choose AI Agent" />
                 </SelectTrigger>
-                <SelectContent>
-                  {aiModels.map((model) => (
+                <SelectContent className="max-h-[300px]">
+                  {sortedModels.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
                       <div className="flex items-center gap-2">
+                        {isFavorite(model.id) && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
                         <span className="text-lg">{model.emoji}</span>
                         <span className="font-medium">{model.name}</span>
                       </div>
@@ -371,6 +425,22 @@ export function TextGeneration() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  toggleFavorite(selectedModel);
+                  const isFav = !isFavorite(selectedModel);
+                  toast.success(isFav ? "Added to favorites!" : "Removed from favorites");
+                }}
+                className="px-2"
+              >
+                {isFavorite(selectedModel) ? (
+                  <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                ) : (
+                  <StarOff className="w-5 h-5 text-muted-foreground" />
+                )}
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               {messages.length > 0 && (
