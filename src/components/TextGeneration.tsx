@@ -193,8 +193,8 @@ export function TextGeneration() {
       
       // Build conversation messages for POST request
       const conversationMessages = [
-        { role: "system", content: `${systemPrompt}. ${usernameContext}. IMPORTANT: Keep responses SHORT (1-3 sentences max unless asked for more). No long explanations. Be direct. You may not have access to recent information.` },
-        ...messages.slice(-5).map(m => ({
+        { role: "system", content: `${systemPrompt}. ${usernameContext}. Keep responses concise and direct. 2-4 sentences max unless the user explicitly asks for more detail.` },
+        ...messages.slice(-6).map(m => ({
           role: m.role,
           content: m.content
         })),
@@ -213,8 +213,9 @@ export function TextGeneration() {
             messages: conversationMessages,
             model: "openai",
             stream: false,
-            temperature: 0.9,
-            seed: Math.floor(Math.random() * 1000000)
+            temperature: 0.85,
+            seed: Math.floor(Math.random() * 1000000),
+            max_tokens: 300
           }),
           signal: abortControllerRef.current.signal
         }
@@ -234,6 +235,7 @@ export function TextGeneration() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
       
+      // Faster character-by-character display
       let currentText = "";
       const chars = fullText.split("");
       
@@ -248,7 +250,8 @@ export function TextGeneration() {
             msg.id === assistantId ? { ...msg, content: currentText } : msg
           )
         );
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        // Faster typing speed - 8ms instead of 20ms
+        await new Promise((resolve) => setTimeout(resolve, 8));
       }
       
       if (!abortControllerRef.current?.signal.aborted) {
