@@ -25,13 +25,13 @@ interface OnboardingStep {
 const steps: OnboardingStep[] = [
   {
     title: "Welcome to ZARA AI! 🎉",
-    description: "Your all-in-one AI platform with 170+ AI models for text and image generation. Let's show you around!",
+    description: "Your all-in-one AI platform with 180+ AI models for text and image generation. Let's show you around!",
     icon: Sparkles,
     color: "from-primary to-accent"
   },
   {
     title: "Text Generation 💬",
-    description: "Chat with 170+ AI personalities! From homework help to creative writing, pick an AI that fits your needs and start chatting.",
+    description: "Chat with 180+ AI personalities! From anime friends to study buddies, pick an AI that fits your needs and start chatting.",
     icon: MessageSquare,
     color: "from-blue-500 to-cyan-400"
   },

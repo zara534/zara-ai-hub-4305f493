@@ -12,8 +12,9 @@ import {
   History, 
   Trash2, 
   MessageSquare, 
-  X,
-  Plus
+  Plus,
+  Clock,
+  Bot
 } from "lucide-react";
 import { ChatSession } from "@/hooks/useChatHistory";
 import { formatDistanceToNow } from "date-fns";
@@ -80,78 +81,103 @@ export function ChatHistoryPanel({
             <span className="hidden sm:inline">History</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <History className="w-5 h-5" />
+        <SheetContent side="left" className="w-[320px] sm:w-[380px] p-0 flex flex-col">
+          {/* Header */}
+          <SheetHeader className="p-4 border-b bg-muted/30">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="flex items-center gap-2 text-lg">
+                <History className="w-5 h-5 text-primary" />
                 Chat History
-              </span>
+              </SheetTitle>
               {sessions.length > 0 && (
                 <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={() => setShowClearDialog(true)}
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               )}
-            </SheetTitle>
+            </div>
           </SheetHeader>
 
+          {/* New Chat Button */}
           <div className="p-3 border-b">
             <Button 
               onClick={handleNewChat}
-              className="w-full gap-2"
-              size="sm"
+              className="w-full gap-2 h-10"
             >
               <Plus className="w-4 h-4" />
               New Chat
             </Button>
           </div>
 
-          <ScrollArea className="h-[calc(100vh-140px)]">
-            <div className="p-2 space-y-1">
+          {/* Sessions List */}
+          <ScrollArea className="flex-1">
+            <div className="p-2">
               {sessions.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm">No chat history yet</p>
-                  <p className="text-xs mt-1">Start a conversation!</p>
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <MessageSquare className="w-8 h-8 opacity-50" />
+                  </div>
+                  <p className="font-medium">No chat history</p>
+                  <p className="text-sm mt-1">Start a conversation!</p>
                 </div>
               ) : (
-                sessions.map((session) => (
-                  <div
-                    key={session.id}
-                    onClick={() => handleSelectSession(session)}
-                    className={`group p-3 rounded-lg cursor-pointer transition-all hover:bg-muted ${
-                      currentSessionId === session.id ? "bg-primary/10 border border-primary/30" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm">{session.modelEmoji}</span>
+                <div className="space-y-1">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      onClick={() => handleSelectSession(session)}
+                      className={`group relative p-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-muted/80 ${
+                        currentSessionId === session.id 
+                          ? "bg-primary/10 border border-primary/30 shadow-sm" 
+                          : "hover:shadow-sm"
+                      }`}
+                    >
+                      <div className="flex gap-3">
+                        {/* Model Emoji */}
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          currentSessionId === session.id 
+                            ? "bg-primary/20" 
+                            : "bg-muted"
+                        }`}>
+                          <span className="text-lg">{session.modelEmoji || "🤖"}</span>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 pr-8">
+                          <p className="font-medium text-sm leading-tight line-clamp-1">
+                            {session.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Bot className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground truncate">
+                              {session.modelName}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-1.5">
+                            <Clock className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(session.updatedAt), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{session.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {session.modelName}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDistanceToNow(new Date(session.updatedAt), { addSuffix: true })}
-                        </p>
-                      </div>
+                      
+                      {/* Delete Button */}
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-opacity"
                         onClick={(e) => handleDeleteSession(session.id, e)}
                       >
-                        <X className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </ScrollArea>
@@ -167,9 +193,9 @@ export function ChatHistoryPanel({
               This will permanently delete this conversation.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -185,14 +211,14 @@ export function ChatHistoryPanel({
               This will permanently delete all {sessions.length} conversations.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={() => {
                 onClearAll();
                 setShowClearDialog(false);
               }} 
-              className="bg-destructive text-destructive-foreground"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Clear All
             </AlertDialogAction>

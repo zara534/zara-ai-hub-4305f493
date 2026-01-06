@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Download, Image as ImageIcon, Copy, X, Trash2 } from "lucide-react";
+import { Loader2, Download, Image as ImageIcon, Copy, X, Trash2, Images, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageGeneratorSkeleton } from "@/components/ModelLoadingSkeleton";
+import { useImageGallery } from "@/hooks/useImageGallery";
+import { ImageGallery } from "@/components/ImageGallery";
 
 
 interface ImageModel {
@@ -86,9 +88,11 @@ export function ImageGeneration() {
   const [error, setError] = useState<string | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [usageCount, setUsageCount] = useState(0);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const { imageModels = DEFAULT_IMAGE_MODELS, rateLimits, isLoadingModels } = useApp();
   const { user, isUnlimited } = useAuth();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { addImage, images: savedImages } = useImageGallery();
 
   useEffect(() => {
     loadUsage();
@@ -200,6 +204,7 @@ export function ImageGeneration() {
       img.onload = () => {
         if (abortControllerRef.current?.signal.aborted) return;
         
+        const model = imageModels.find(m => m.id === selectedModel) || imageModels[0];
         const newImage: GeneratedImage = {
           id: Date.now().toString(),
           url: imageUrl,
@@ -207,8 +212,16 @@ export function ImageGeneration() {
           timestamp: Date.now()
         };
         setGeneratedImages(prev => [newImage, ...prev]);
+        
+        // Save to gallery
+        addImage({
+          url: imageUrl,
+          prompt: prompt,
+          modelName: model?.name || "AI Image"
+        });
+        
         incrementUsage();
-        toast.success("Image generated successfully!");
+        toast.success("Image generated & saved to gallery!");
         setIsLoading(false);
       };
       img.onerror = () => {
@@ -287,6 +300,31 @@ export function ImageGeneration() {
     toast.success("Image removed");
   };
 
+  const handleShareImage = async (imageUrl: string, promptText: string) => {
+    if (navigator.share) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `zara-ai-${Date.now()}.png`, { type: "image/png" });
+        
+        await navigator.share({
+          title: "AI Generated Image",
+          text: promptText,
+          files: [file]
+        });
+        toast.success("Shared successfully!");
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          await navigator.clipboard.writeText(imageUrl);
+          toast.success("Image URL copied to clipboard!");
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(imageUrl);
+      toast.success("Image URL copied to clipboard!");
+    }
+  };
+
   const handleExamplePromptClick = (examplePrompt: string) => {
     setPrompt(examplePrompt);
     toast.success("Example prompt loaded!");
@@ -300,13 +338,31 @@ export function ImageGeneration() {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
+      <ImageGallery isOpen={isGalleryOpen} onClose={() => setIsGalleryOpen(false)} />
+      
       <Card className="shadow-lg border-2">
-        <CardHeader>
-          <CardTitle className="text-2xl">
-            <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-              ZARA AI HUB
-            </span>
-          </CardTitle>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl">
+              <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                ZARA AI HUB
+              </span>
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsGalleryOpen(true)}
+              className="gap-2"
+            >
+              <Images className="w-4 h-4" />
+              <span className="hidden sm:inline">Gallery</span>
+              {savedImages.length > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                  {savedImages.length}
+                </span>
+              )}
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground mt-2">
             {selectedModelData?.description || "Generate stunning images with AI"}
           </p>
@@ -453,21 +509,30 @@ export function ImageGeneration() {
                   <div className="flex gap-2">
                     <Button 
                       onClick={() => handleDownload(image.url, image.prompt)} 
-                      className="flex-1" 
                       variant="outline"
                       size="sm"
+                      className="flex-1"
                     >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
+                      <Download className="w-4 h-4 mr-1" />
+                      <span className="hidden sm:inline">Download</span>
+                    </Button>
+                    <Button 
+                      onClick={() => handleShareImage(image.url, image.prompt)} 
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Share2 className="w-4 h-4 mr-1" />
+                      <span className="hidden sm:inline">Share</span>
                     </Button>
                     <Button 
                       onClick={() => handleCopyPrompt(image.prompt)} 
-                      className="flex-1"
                       variant="secondary"
                       size="sm"
+                      className="flex-1"
                     >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Prompt
+                      <Copy className="w-4 h-4 mr-1" />
+                      <span className="hidden sm:inline">Copy</span>
                     </Button>
                   </div>
                 </CardContent>

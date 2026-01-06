@@ -25,13 +25,14 @@ import { motion } from "framer-motion";
 
 export function Landing() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      navigate("/app");
+    // If user is logged in, redirect to app immediately
+    if (user && session) {
+      navigate("/app", { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, session, navigate]);
 
   const features = [
     {
