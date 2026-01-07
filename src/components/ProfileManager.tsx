@@ -9,7 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PasswordChanger } from "./PasswordChanger";
 
-export function ProfileManager() {
+interface ProfileManagerProps {
+  isMobile?: boolean;
+}
+
+export function ProfileManager({ isMobile = false }: ProfileManagerProps) {
   const { user } = useAuth();
   const [username, setUsername] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -70,10 +74,17 @@ export function ProfileManager() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <User className="w-4 h-4 mr-2" />
-          Profile
-        </Button>
+        {isMobile ? (
+          <Button variant="ghost" className="w-full justify-start text-lg h-12">
+            <User className="w-5 h-5 mr-3" />
+            Profile
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm">
+            <User className="w-4 h-4 mr-2" />
+            Profile
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

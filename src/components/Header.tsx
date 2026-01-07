@@ -47,7 +47,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                   ZARA AI HUB
                 </SheetTitle>
               </SheetHeader>
-              <div className="flex flex-col gap-3 mt-8">
+              <div className="flex flex-col gap-2 mt-8">
                 <Button
                   variant={currentView === "home" ? "default" : "ghost"}
                   className="w-full justify-start text-lg h-12"
@@ -72,15 +72,10 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                   <Settings className="w-5 h-5 mr-3" />
                   Settings
                 </Button>
-                <div className="px-2">
-                  <ProfileManager />
-                </div>
-                <div className="px-2">
-                  <InstallPWA />
-                </div>
+                <ProfileManager isMobile />
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-lg h-12 text-destructive hover:text-destructive/90"
+                  className="w-full justify-start text-lg h-12 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                   onClick={handleLogout}
                 >
                   <LogOut className="w-5 h-5 mr-3" />

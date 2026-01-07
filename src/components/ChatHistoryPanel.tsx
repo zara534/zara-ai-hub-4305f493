@@ -84,17 +84,17 @@ export function ChatHistoryPanel({
         <SheetContent side="left" className="w-[320px] sm:w-[380px] p-0 flex flex-col">
           {/* Header */}
           <SheetHeader className="p-4 border-b bg-muted/30">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="flex items-center gap-2 text-lg">
+            <div className="flex items-center justify-between gap-4">
+              <SheetTitle className="flex items-center gap-2 text-lg flex-1">
                 <History className="w-5 h-5 text-primary" />
                 Chat History
               </SheetTitle>
               {sessions.length > 0 && (
                 <Button 
                   variant="ghost" 
-                  size="sm"
+                  size="icon"
                   onClick={() => setShowClearDialog(true)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 mr-8"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
